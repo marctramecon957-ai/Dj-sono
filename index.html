@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sound &amp; Light</title>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#050507;--card:#120a0d;--pink:#ff1e2d;--cyan:#ff8a92;--yel:#ffd23f;--txt:#f5f5f7}
+*{box-sizing:border-box}body{margin:0;font-family:Inter,sans-serif;color:var(--txt);background:radial-gradient(ellipse at 50% 0,#4a0710,transparent 60%),radial-gradient(ellipse at 50% 100%,#2a0308,transparent 55%),var(--bg);min-height:100vh;overflow-x:hidden}
+.beams{position:fixed;inset:0 0 35% 0;pointer-events:none;z-index:0;overflow:hidden}
+.beams i{position:absolute;top:-10%;width:90px;height:130%;background:linear-gradient(180deg,rgba(255,255,255,.55),rgba(150,200,255,.15) 40%,transparent 80%);filter:blur(10px);transform-origin:top center;opacity:.5;animation:sw 7s ease-in-out infinite alternate}
+.beams i:nth-child(1){left:8%;--a:-22deg;--b:12deg}.beams i:nth-child(2){left:28%;--a:18deg;--b:-14deg;animation-duration:9s}
+.beams i:nth-child(3){left:50%;--a:-10deg;--b:10deg;animation-duration:6s;background:linear-gradient(180deg,rgba(255,40,55,.75),transparent 80%)}
+.beams i:nth-child(4){left:70%;--a:15deg;--b:-20deg;animation-duration:8s}.beams i:nth-child(5){left:88%;--a:-16deg;--b:18deg;animation-duration:10s}
+@keyframes sw{from{transform:rotate(var(--a))}to{transform:rotate(var(--b))}}
+header,nav,main{position:relative;z-index:1}header{padding:26px 16px 0;text-align:center}
+h1,h2,h3,nav button,.fest{font-family:Anton,Impact,sans-serif;font-weight:400;letter-spacing:.5px;text-transform:uppercase}
+.logo{margin:0;font-style:italic;transform:skew(-8deg);font-size:clamp(38px,9vw,84px);line-height:1;text-shadow:0 4px 26px rgba(255,30,45,.65)}
+.sub{color:var(--pink);letter-spacing:.5em;font-size:clamp(11px,2.4vw,18px);font-weight:600;margin:10px 0 2px;border-top:2px solid var(--pink);border-bottom:2px solid var(--pink);display:inline-block;padding:2px 14px}
+.fest{color:var(--pink);font-style:italic;font-size:clamp(22px,5vw,40px);transform:skew(-10deg);text-shadow:0 0 18px rgba(255,30,45,.7)}
+nav{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;padding:14px}
+nav button{background:rgba(0,0,0,.5);border:2px solid var(--pink);color:var(--txt);padding:8px 14px;border-radius:4px;cursor:pointer;font-size:14px;transform:skew(-8deg)}
+nav button.on,nav button:hover{background:var(--pink);box-shadow:0 0 20px var(--pink)}
+main{max-width:980px;margin:auto;padding:12px 16px 60px}section{display:none}section.on{display:block}
+.card{background:rgba(18,10,13,.92);border:1px solid #5a1520;border-radius:12px;padding:18px;margin:14px 0}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+.grid img,.grid video{width:100%;height:200px;object-fit:cover;border-radius:10px;border:1px solid #5a1520}
+label{display:block;margin:10px 0 4px;font-size:13px;color:var(--cyan)}
+input,select,textarea{width:100%;padding:10px;border-radius:8px;border:1px solid #6a1a26;background:#0b0507;color:var(--txt);font:inherit}textarea{min-height:90px}
+.btn{background:linear-gradient(90deg,#ff1e2d,#b30012);border:0;color:#fff;padding:10px 18px;border-radius:6px;cursor:pointer;font-weight:600;margin:8px 6px 0 0}
+.btn.s{padding:6px 12px;font-size:12px}.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.ct{display:flex;gap:14px;align-items:center}.ct img{width:84px;height:84px;border-radius:50%;object-fit:cover;border:3px solid var(--pink)}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center}.cal div{padding:9px 0;border-radius:8px;font-size:13px}.cal .h{color:var(--cyan);font-size:11px}
+.d0{background:#fff;color:#111}.d1{background:#e11d2e;color:#fff}.d2{background:#2563eb;color:#fff}.adm .cal .d{cursor:pointer}
+.bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.msg{padding:10px;border-radius:8px;margin-top:10px}.ok{background:#0f5132}.ko{background:#7a1020}
+table{width:100%;border-collapse:collapse;font-size:13px}td,th{padding:6px;border-bottom:1px solid #4a1520;text-align:left}
+.tag{padding:2px 8px;border-radius:10px;background:#4a1520;font-size:11px}.leg span{margin-right:12px;font-size:12px}
+</style></head><body>
+<div class="beams"><i></i><i></i><i></i><i></i><i></i></div><header><h1 id="ttl" class="logo">Sound &amp; Light</h1><div class="sub">SONORISATION</div><div class="fest">Mode Festival</div></header>
+<nav id="nav"></nav>
+<main>
+<section id="home"><div class="grid" id="hero"></div></section>
+
+<section id="dossier"><div class="card"><h2>Déposer un dossier</h2>
+<form id="f" onsubmit="return sendD(event)">
+<label>Prestation</label><select name="service"><option>DJ</option><option>Artificier</option><option>Lighter</option></select>
+<div class="row"><div><label>Nom de famille</label><input name="lastName" required></div>
+<div><label>Date de la soirée</label><input type="date" name="date" id="fd" required></div></div>
+<div id="dmsg"></div>
+<div class="row"><div><label>Budget minimum (€)</label><input type="number" min="0" name="budgetMin" required></div>
+<div><label>Budget maximum (€)</label><input type="number" min="0" name="budgetMax" required></div></div>
+<div class="row"><div><label>Email</label><input type="email" name="email" required></div>
+<div><label>Téléphone</label><input type="tel" name="phone" required></div></div>
+<label>Adresse postale de la soirée</label><input name="address" required>
+<button class="btn">Envoyer le dossier</button><div id="res"></div></form></div></section>
+
+<section id="contact"><h2>Nous contacter</h2><div id="cts"></div></section>
+
+<section id="dispo"><div class="card"><h2>Disponibilités</h2>
+<div class="leg"><span>⬜ Disponible</span><span>🟥 Indisponible</span><span>🟦 En vacances</span></div>
+<div class="bar"><button class="btn s" onclick="mv(-1)">◀</button><b id="mt"></b><button class="btn s" onclick="mv(1)">▶</button></div>
+<div id="pc"></div></div></section>
+
+<section id="admin"><div id="login" class="card"><h2>Espace Admin</h2><label>Mot de passe</label><input type="password" id="pw"><button class="btn" onclick="login()">Connexion</button><div id="lm"></div></div>
+<div id="panel" style="display:none" class="adm">
+<div class="card"><h3>Accueil</h3><label>Titre du site</label><input id="a_t"><label>📁 Importer des images / vidéos depuis ton ordinateur</label><input type="file" id="up_h" multiple accept="image/*,video/*" onchange="upl(this,'a_h')"><div id="upm"></div><label>Liste (1 lien par ligne, tu peux réordonner ou supprimer)</label><textarea id="a_h"></textarea><button class="btn s" onclick="saveSite()">Enregistrer</button></div>
+<div class="card"><h3>Contacts</h3><label>1 ligne par personne : Nom | Rôle | Téléphone | Email | Lien photo</label><textarea id="a_c"></textarea><label>📁 Importer une photo : clique dans la ligne de la personne, après le dernier « | », puis choisis le fichier</label><input type="file" id="up_c" accept="image/*" onchange="upl(this,'a_c')"><div id="upm2"></div><button class="btn s" onclick="saveC()">Enregistrer</button></div>
+<div class="card"><h3>Mails</h3><button class="btn s" onclick="tmail()">Envoyer un mail de test</button><div id="tm"></div></div><div class="card"><h3>Calendrier</h3><p style="font-size:12px">Clique sur un jour : Blanc → Rouge → Bleu → Blanc</p>
+<div class="bar"><button class="btn s" onclick="mv(-1)">◀</button><b id="mt2"></b><button class="btn s" onclick="mv(1)">▶</button></div><div id="ac"></div></div>
+<div class="card"><h3>Dossiers</h3><div id="ds" style="overflow:auto"></div></div>
+<div class="card"><h3>Dépenses / Budget / Revenus</h3>
+<form onsubmit="return addF(event)"><div class="row"><div><label>Type</label><select name="type"><option value="revenue">Revenu</option><option value="expense">Dépense</option><option value="budget">Budget</option></select></div>
+<div><label>Nom de famille / libellé</label><input name="name" required></div></div>
+<div class="row"><div><label>Montant (€)</label><input type="number" step="0.01" min="0" name="amount" required></div><div><label>Date</label><input type="date" name="date" required></div></div>
+<label>Note</label><input name="note"><button class="btn">Ajouter</button></form>
+<div class="row"><div><label>Mois</label><input type="month" id="fm"></div><div><label>Année</label><input type="number" id="fy"></div></div>
+<div id="tot"></div><div style="overflow:auto"><table id="ft"></table></div></div>
+<button class="btn" onclick="localStorage.t='';location.reload()">Déconnexion</button></div></section>
+</main>
+<script>
+const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let T=localStorage.t||'',P={site:{hero:[]},contacts:[],calendar:{}},A={dossiers:[],finances:[]},cur=new Date();
+const api=async(u,m='GET',b)=>{const r=await fetch('/api'+u,{method:m,headers:{'Content-Type':'application/json','x-token':T},body:b?JSON.stringify(b):undefined});const j=await r.json().catch(()=>({}));if(!r.ok)throw j.error||'Erreur';return j};
+const tabs=[['home','Accueil'],['dossier','Déposer un dossier'],['contact','Contact'],['dispo','Disponibilités'],['admin','Admin']];
+$('#nav').innerHTML=tabs.map(t=>`<button data-t="${t[0]}" onclick="show('${t[0]}')">${t[1]}</button>`).join('');
+function show(id){document.querySelectorAll('section').forEach(s=>s.classList.toggle('on',s.id==id));document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.t==id))}
+const iso=(y,m,d)=>`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+function calHtml(adm){const y=cur.getFullYear(),m=cur.getMonth(),f=(new Date(y,m,1).getDay()+6)%7,n=new Date(y,m+1,0).getDate();
+let h=['L','M','M','J','V','S','D'].map(x=>`<div class="h">${x}</div>`).join('')+'<div></div>'.repeat(f);
+for(let d=1;d<=n;d++){const k=iso(y,m,d),s={busy:1,vacation:2}[P.calendar[k]]||0;h+=`<div class="d d${s}" ${adm?`onclick="tog('${k}')"`:''}>${d}</div>`}return `<div class="cal">${h}</div>`}
+function drawCal(){const t=cur.toLocaleDateString('fr-FR',{month:'long',year:'numeric'});$('#mt').textContent=$('#mt2').textContent=t;$('#pc').innerHTML=calHtml(0);$('#ac').innerHTML=calHtml(1)}
+const mv=n=>{cur=new Date(cur.getFullYear(),cur.getMonth()+n,1);drawCal()};
+async function tog(k){const c=P.calendar[k];if(!c)P.calendar[k]='busy';else if(c=='busy')P.calendar[k]='vacation';else delete P.calendar[k];drawCal();await api('/admin/calendar','PUT',P.calendar)}
+function render(){document.title=$('#ttl').textContent=P.site.title||'Sound & Light';
+$('#hero').innerHTML=(P.site.hero||[]).map(u=>/\.(mp4|webm|mov)(\?|$)/i.test(u)?`<video src="${esc(u)}" controls muted loop playsinline></video>`:`<img src="${esc(u)}" alt="">`).join('')||'<p>Bientôt du contenu…</p>';
+$('#cts').innerHTML=P.contacts.map(c=>`<div class="card ct">${c.photo?`<img src="${esc(c.photo)}" alt="">`:''}<div><h3>${esc(c.name)}</h3><div>${esc(c.role)}</div>${c.phone?`<div>📞 <a style="color:var(--yel)" href="tel:${esc(c.phone)}">${esc(c.phone)}</a></div>`:''}${c.email?`<div>✉️ <a style="color:var(--cyan)" href="mailto:${esc(c.email)}">${esc(c.email)}</a></div>`:''}</div></div>`).join('');drawCal()}
+$('#fd').onchange=e=>{const s=P.calendar[e.target.value];$('#dmsg').innerHTML=s?`<div class="msg ko">🔴 ${s=='busy'?'Non disponible':'Non disponible (en vacances)'} à cette date</div>`:e.target.value?'<div class="msg ok">Date disponible ✅</div>':''};
+async function sendD(e){e.preventDefault();const b=Object.fromEntries(new FormData(e.target));try{const r=await api('/dossier','POST',b);
+$('#res').innerHTML=r.status=='refused'?'<div class="msg ko">Date non disponible. Un message vous a été envoyé.</div>':'<div class="msg ok">Dossier envoyé ! Vous allez recevoir un mail et un SMS.</div>';e.target.reset();$('#dmsg').innerHTML=''}catch(x){$('#res').innerHTML=`<div class="msg ko">${esc(x)}</div>`}return false}
+async function login(){try{T=(await api('/login','POST',{password:$('#pw').value})).token;localStorage.t=T;openAdmin()}catch(x){$('#lm').innerHTML=`<div class="msg ko">${esc(x)}</div>`}}
+async function openAdmin(){try{A=await api('/admin/all')}catch{localStorage.t='';return}
+$('#login').style.display='none';$('#panel').style.display='block';$('#a_t').value=P.site.title;$('#a_h').value=(P.site.hero||[]).join('\n');
+$('#a_c').value=P.contacts.map(c=>[c.name,c.role,c.phone,c.email,c.photo].join(' | ')).join('\n');
+const n=new Date();$('#fm').value=n.toISOString().slice(0,7);$('#fy').value=n.getFullYear();$('#fm').onchange=$('#fy').oninput=drawA;drawA()}
+async function saveSite(){await api('/admin/site','PUT',{title:$('#a_t').value,hero:$('#a_h').value.split('\n').map(x=>x.trim()).filter(Boolean)});await load();alert('Enregistré')}
+async function saveC(){await api('/admin/contacts','PUT',$('#a_c').value.split('\n').filter(x=>x.trim()).map(l=>{const [name,role,phone,email,photo]=l.split('|').map(x=>x.trim());return{name,role,phone,email,photo}}));await load();alert('Enregistré')}
+const ST={pending:'En attente',accepted:'Accepté',refused:'Refusé',paid:'Payé'};
+function drawA(){$('#ds').innerHTML='<table><tr><th>Client</th><th>Prestation</th><th>Date</th><th>Budget</th><th>Contact</th><th>Lieu</th><th>Statut</th><th></th></tr>'+A.dossiers.map(d=>`<tr><td>${esc(d.lastName)}</td><td>${esc(d.service)}</td><td>${esc(d.date)}</td><td>${d.budgetMin}–${d.budgetMax} €</td><td>${esc(d.phone)}<br>${esc(d.email)}</td><td>${esc(d.address)}</td><td><span class="tag">${ST[d.status]}</span></td><td>${d.status=='pending'?`<button class="btn s" onclick="dec('${d.id}',1)">Accepter</button><button class="btn s" onclick="dec('${d.id}',0)">Refuser</button>`:''}${d.status=='accepted'?`<button class="btn s" onclick="pay('${d.id}')">Encaisser + reçu</button>`:''}</td></tr>`).join('')+'</table>';
+const m=$('#fm').value,y=$('#fy').value,sum=(t,p)=>A.finances.filter(f=>f.type==t&&f.date.startsWith(p)).reduce((a,f)=>a+f.amount,0),e=x=>x.toFixed(2)+' €';
+$('#tot').innerHTML=`<table><tr><th></th><th>Mois ${m}</th><th>Année ${y}</th></tr>${[['Revenus','revenue'],['Dépenses','expense'],['Budget','budget']].map(r=>`<tr><td>${r[0]}</td><td>${e(sum(r[1],m))}</td><td>${e(sum(r[1],y))}</td></tr>`).join('')}<tr><td><b>Solde (revenus − dépenses)</b></td><td><b>${e(sum('revenue',m)-sum('expense',m))}</b></td><td><b>${e(sum('revenue',y)-sum('expense',y))}</b></td></tr></table>`;
+$('#ft').innerHTML='<tr><th>Date</th><th>Type</th><th>Nom</th><th>Montant</th><th>Note</th><th></th></tr>'+[...A.finances].sort((a,b)=>b.date.localeCompare(a.date)).map(f=>`<tr><td>${f.date}</td><td>${{revenue:'Revenu',expense:'Dépense',budget:'Budget'}[f.type]}</td><td>${esc(f.name)}</td><td>${e(f.amount)}</td><td>${esc(f.note)}</td><td><button class="btn s" onclick="delF('${f.id}')">✕</button></td></tr>`).join('')}
+async function upl(inp,t){const c=P.upload||{},m=$(t=='a_h'?'#upm':'#upm2');if(!c.cloud||!c.preset){m.innerHTML='<div class="msg ko">Importation non configurée : ajoute CLOUDINARY_CLOUD et CLOUDINARY_PRESET dans Render</div>';inp.value='';return}
+const ta=$('#'+t);for(const f of inp.files){m.textContent='Envoi de '+f.name+'…';try{const fd=new FormData();fd.append('file',f);fd.append('upload_preset',c.preset);const j=await(await fetch(`https://api.cloudinary.com/v1_1/${c.cloud}/auto/upload`,{method:'POST',body:fd})).json();if(!j.secure_url)throw(j.error&&j.error.message)||'Échec';
+if(t=='a_h')ta.value=(ta.value.trim()?ta.value.trim()+'\n':'')+j.secure_url;else{const p=ta.selectionStart??ta.value.length;ta.value=ta.value.slice(0,p)+j.secure_url+ta.value.slice(p)}m.innerHTML='<div class="msg ok">✅ '+esc(f.name)+' importé — clique sur Enregistrer</div>'}catch(x){m.innerHTML='<div class="msg ko">'+esc(x)+'</div>'}}inp.value=''}
+async function tmail(){$('#tm').textContent='Envoi…';try{const r=await api('/admin/test-mail','POST');$('#tm').innerHTML=r.error?`<div class="msg ko">❌ ${esc(r.error)}</div>`:`<div class="msg ok">✅ Mail envoyé à ${esc(r.to)} (regarde aussi les spams)</div>`}catch(x){$('#tm').innerHTML=`<div class="msg ko">${esc(x)}</div>`}}
+async function dec(id,a){await api('/admin/decision/'+id,'POST',{accept:a});await refresh()}
+async function pay(id){const s=prompt('Lignes du reçu — format : Prestation:montant;Acompte:montant\nEx : DJ 5h:600;Location lumières:150');if(!s)return;
+const lines=s.split(';').map(x=>{const [label,amount]=x.split(':');return{label:label.trim(),amount:parseFloat(amount)}});try{await api('/admin/pay/'+id,'POST',{lines});await refresh()}catch(x){alert(x)}}
+async function addF(e){e.preventDefault();await api('/admin/finance','POST',Object.fromEntries(new FormData(e.target)));e.target.reset();await refresh();return false}
+async function delF(id){if(confirm('Supprimer ?')){await api('/admin/finance/'+id,'DELETE');await refresh()}}
+async function refresh(){A=await api('/admin/all');drawA()}
+async function load(){P=await(await fetch('/api/public',{cache:'no-store'})).json();render()}
+setInterval(async()=>{if(document.hidden)return;try{const p=await(await fetch('/api/public',{cache:'no-store'})).json();if(JSON.stringify(p)!==JSON.stringify(P)){P=p;render()}if(T&&$('#panel').style.display=='block'){A=await api('/admin/all');drawA()}}catch{}},15000);
+show('home');load().then(()=>{if(T)openAdmin()});
+</script></body></html>
