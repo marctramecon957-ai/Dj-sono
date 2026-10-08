@@ -62,7 +62,7 @@ const CO = () => ({ name: process.env.COMPANY_NAME || process.env.MAIL_NAME || (
 const sigText = () => { const c = CO(); return '\n\n--\n' + [c.name, c.addr, c.phone && 'Tél. ' + c.phone, c.email, c.siret && 'SIRET ' + c.siret, c.tva && 'TVA ' + c.tva].filter(Boolean).join('\n'); };
 const p = t => `<p style="font-size:15px;line-height:1.6;margin:0 0 12px">${t}</p>`;
 const rows = a => `<table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin:12px 0">${a.map(r => `<tr><td style="padding:9px 0;border-bottom:1px solid #eee;color:#777;width:38%">${E(r[0])}</td><td style="padding:9px 0;border-bottom:1px solid #eee;font-weight:bold">${E(r[1])}</td></tr>`).join('')}</table>`;
-const tpl = (title, inner) => { const c = CO(); return `<!doctype html><html><body style="margin:0;background:#f3f3f5;font-family:Arial,Helvetica,sans-serif;color:#1a1a1f"><table width="100%" cellpadding="0" cellspacing="0" style="background:#f3f3f5;padding:24px 0"><tr><td align="center"><table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#fff;border-radius:10px;overflow:hidden"><tr><td style="background:#0b0507;padding:26px 24px;text-align:center;border-bottom:4px solid #ff1e2d">${c.logo ? `<img src="${E(c.logo)}" alt="${E(c.name)}" style="max-height:70px">` : `<div style="font:italic 900 30px 'Arial Black',Arial,sans-serif;color:#fff;letter-spacing:1px;text-transform:uppercase">${E(c.name.replace(/\s*sonorisation\s*$/i, ''))}</div><div style="color:#ff1e2d;letter-spacing:6px;font-size:12px;margin-top:6px">SONORISATION · MODE FESTIVAL</div>`}</td></tr><tr><td style="padding:28px 28px 8px"><h1 style="margin:0 0 14px;font-size:22px;color:#b30012">${E(title)}</h1>${inner}</td></tr><tr><td style="padding:18px 28px 26px;font-size:12px;color:#777;border-top:1px solid #eee"><b style="color:#444;font-size:13px">${E(c.name)}</b>${c.addr ? '<br>' + E(c.addr) : ''}${c.phone ? '<br>Tél. ' + E(c.phone) : ''}${c.email ? '<br>' + E(c.email) : ''}${c.siret ? '<br>SIRET ' + E(c.siret) : ''}${c.tva ? ' · TVA ' + E(c.tva) : ''}</td></tr></table></td></tr></table></body></html>`; };
+const tpl = (title, inner) => { const c = CO(); return `<!doctype html><html><body style="margin:0;background:#f3f3f5;font-family:Arial,Helvetica,sans-serif;color:#1a1a1f"><table width="100%" cellpadding="0" cellspacing="0" style="background:#f3f3f5;padding:24px 0"><tr><td align="center"><table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#fff;border-radius:10px;overflow:hidden"><tr><td style="background:#0b0507;padding:26px 24px;text-align:center;border-bottom:4px solid #ff1e2d">${c.logo ? `<img src="${E(c.logo)}" alt="${E(c.name)}" style="max-height:70px">` : `<div style="font:italic 900 30px 'Arial Black',Arial,sans-serif;color:#fff;letter-spacing:1px;text-transform:uppercase">${E(c.name.replace(/\s*sonorisation\s*$/i, ''))}</div><div style="color:#ff1e2d;letter-spacing:6px;font-size:12px;margin-top:6px">SONORISATION</div>`}</td></tr><tr><td style="padding:28px 28px 8px"><h1 style="margin:0 0 14px;font-size:22px;color:#b30012">${E(title)}</h1>${inner}</td></tr><tr><td style="padding:18px 28px 26px;font-size:12px;color:#777;border-top:1px solid #eee"><b style="color:#444;font-size:13px">${E(c.name)}</b>${c.addr ? '<br>' + E(c.addr) : ''}${c.phone ? '<br>Tél. ' + E(c.phone) : ''}${c.email ? '<br>' + E(c.email) : ''}${c.siret ? '<br>SIRET ' + E(c.siret) : ''}${c.tva ? ' · TVA ' + E(c.tva) : ''}</td></tr></table></td></tr></table></body></html>`; };
 const both = (m, ph, sub, txt, html) => { Promise.all([m && mail(m, sub, txt, html), ph && sms(ph, txt.slice(0, 300))]).catch(() => {}); };
 
 // ---- Auth admin ----
@@ -74,13 +74,14 @@ app.post('/api/login', (req, res) => {
 });
 
 // ---- Public ----
-app.get('/api/public', (_, res) => res.json({ site: D.site, contacts: D.contacts, calendar: D.calendar, upload: { cloud: process.env.CLOUDINARY_CLOUD || '', preset: process.env.CLOUDINARY_PRESET || '' } }));
+const svc = () => ({ DJ: true, Artificier: true, Lighter: true, ...(D.site.services || {}) });
+app.get('/api/public', (_, res) => res.json({ site: { ...D.site, services: svc() }, contacts: D.contacts, calendar: D.calendar, upload: { cloud: process.env.CLOUDINARY_CLOUD || '', preset: process.env.CLOUDINARY_PRESET || '' } }));
 
 app.post('/api/dossier', async (req, res) => {
   const b = req.body, s = String;
   const d = { id: crypto.randomUUID(), created: new Date().toISOString(), service: s(b.service).slice(0, 20), date: s(b.date), lastName: s(b.lastName).slice(0, 60),
     budgetMin: +b.budgetMin, budgetMax: +b.budgetMax, email: s(b.email).slice(0, 120), phone: s(b.phone).slice(0, 30), address: s(b.address).slice(0, 200) };
-  if (!['DJ', 'Artificier', 'Lighter'].includes(d.service) || !/^\d{4}-\d{2}-\d{2}$/.test(d.date) || !d.lastName || !d.email || !d.phone || !d.address || !(d.budgetMax >= d.budgetMin))
+  if (!['DJ', 'Artificier', 'Lighter'].includes(d.service) || svc()[d.service] === false || !/^\d{4}-\d{2}-\d{2}$/.test(d.date) || !d.lastName || !d.email || !d.phone || !d.address || !(d.budgetMax >= d.budgetMin))
     return res.status(400).json({ error: 'Formulaire incomplet ou invalide' });
   const busy = D.calendar[d.date];
   d.status = busy ? 'refused' : 'pending';
@@ -97,7 +98,9 @@ app.post('/api/dossier', async (req, res) => {
 
 // ---- Admin ----
 app.get('/api/admin/all', adm, (_, res) => res.json({ dossiers: D.dossiers, finances: D.finances }));
-app.put('/api/admin/site', adm, (req, res) => { D.site = { title: String(req.body.title || 'Sound & Light'), hero: (req.body.hero || []).map(String) }; save(); res.json({ ok: 1 }); });
+app.put('/api/admin/site', adm, (req, res) => { const sv = req.body.services || {};
+  D.site = { title: String(req.body.title || 'Sound & Light'), hero: (req.body.hero || []).map(String), about: String(req.body.about || '').slice(0, 3000),
+    services: { DJ: sv.DJ !== false, Artificier: sv.Artificier !== false, Lighter: sv.Lighter !== false } }; save(); res.json({ ok: 1 }); });
 app.put('/api/admin/contacts', adm, (req, res) => { D.contacts = req.body.map(c => ({ name: String(c.name), role: String(c.role || ''), phone: String(c.phone || ''), email: String(c.email || ''), photo: String(c.photo || '') })); save(); res.json({ ok: 1 }); });
 app.put('/api/admin/calendar', adm, (req, res) => { D.calendar = req.body; save(); res.json({ ok: 1 }); });
 
