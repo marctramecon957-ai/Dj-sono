@@ -29,13 +29,18 @@ const mailer = process.env.SMTP_HOST ? nodemailer.createTransport({ host: proces
 // Render (offre gratuite) bloque le SMTP : on envoie par l'API HTTPS de Brevo
 const mail = async (to, subject, text) => {
   try {
-    if (process.env.BREVO_API_KEY) {
+    if (process.env.MAIL_SCRIPT_URL) {
+      const r = await fetch(process.env.MAIL_SCRIPT_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ secret: process.env.MAIL_SCRIPT_SECRET || '', to, subject, text, name: process.env.MAIL_NAME || 'Sound & Light' }) });
+      const t = await r.text();
+      if (t.trim() !== 'ok') throw new Error('Google Script : ' + t.slice(0, 200));
+    } else if (process.env.BREVO_API_KEY) {
       if (!process.env.MAIL_FROM) return 'MAIL_FROM manquant dans Render';
       const r = await fetch('https://api.brevo.com/v3/smtp/email', { method: 'POST', headers: { 'api-key': process.env.BREVO_API_KEY, 'Content-Type': 'application/json' },
         body: JSON.stringify({ sender: { name: process.env.MAIL_NAME || 'Sound & Light', email: process.env.MAIL_FROM }, to: [{ email: to }], subject, textContent: text }) });
       if (!r.ok) throw new Error('Brevo ' + r.status + ' ' + await r.text());
     } else if (mailer) await mailer.sendMail({ from: process.env.MAIL_FROM || process.env.SMTP_USER, to, subject, text });
-    else return 'BREVO_API_KEY manquant dans Render';
+    else return 'Aucun service mail configuré (MAIL_SCRIPT_URL ou BREVO_API_KEY manquant)';
     return null;
   } catch (e) { console.error('ERREUR MAIL', to, e.message); return e.message; }
 };
