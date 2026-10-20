@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Sound &amp; Light</title>
+<title>Sound &amp; Light 03</title>
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;600&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#050507;--card:#120a0d;--pink:#ff1e2d;--cyan:#ff8a92;--yel:#ffd23f;--txt:#f5f5f7}
@@ -37,7 +37,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}td,th{padding:6px;borde
 #abt p{line-height:1.7;margin:8px 0;font-size:16px;color:#e8e8ee}#abt h2{font-size:clamp(22px,4.5vw,34px);color:var(--pink);margin:0 0 6px}
 .tag{padding:2px 8px;border-radius:10px;background:#4a1520;font-size:11px}.leg span{margin-right:12px;font-size:12px}
 </style></head><body>
-<div class="beams"><i></i><i></i><i></i><i></i><i></i></div><header><h1 id="ttl" class="logo">Sound &amp; Light</h1><div class="sub">SONORISATION</div></header>
+<div class="beams"><i></i><i></i><i></i><i></i><i></i></div><header><h1 id="ttl" class="logo">Sound &amp; Light 03</h1><div class="sub">SONORISATION</div></header>
 <nav id="nav"></nav>
 <main>
 <section id="home"><div class="card" id="abt"></div><div class="grid" id="hero"></div></section>
@@ -103,7 +103,7 @@ function aboutRender(){const ab=(P.site.about||DEF).split('\n').filter(x=>x.trim
 function svcRender(){const sv=P.site.services||{},on=['DJ','Artificier','Lighter'].filter(k=>sv[k]!==false),sel=$('#f select[name=service]'),old=sel.value;
 sel.innerHTML=on.map(k=>`<option>${k}</option>`).join('');if(on.includes(old))sel.value=old;
 $('#f').style.display=on.length?'':'none';$('#svm').innerHTML=on.length?'':'<div class="msg ko">Aucune prestation n’est proposée pour le moment.</div>'}
-function render(){aboutRender();svcRender();document.title=$('#ttl').textContent=P.site.title||'Sound & Light';
+function render(){aboutRender();svcRender();document.title=$('#ttl').textContent=P.site.title||'Sound & Light 03';
 $('#hero').innerHTML=(P.site.hero||[]).map(u=>/\.(mp4|webm|mov)(\?|$)/i.test(u)?`<video src="${esc(u)}" controls muted loop playsinline></video>`:`<img src="${esc(u)}" alt="">`).join('')||'<p>Bientôt du contenu…</p>';
 $('#cts').innerHTML=P.contacts.map(c=>`<div class="card ct">${c.photo?`<img src="${esc(c.photo)}" alt="">`:''}<div><h3>${esc(c.name)}</h3><div>${esc(c.role)}</div>${c.phone?`<div>📞 <a style="color:var(--yel)" href="tel:${esc(c.phone)}">${esc(c.phone)}</a></div>`:''}${c.email?`<div>✉️ <a style="color:var(--cyan)" href="mailto:${esc(c.email)}">${esc(c.email)}</a></div>`:''}</div></div>`).join('');drawCal()}
 $('#fd').onchange=e=>{const s=P.calendar[e.target.value];$('#dmsg').innerHTML=s?`<div class="msg ko">🔴 ${s=='busy'?'Non disponible':'Non disponible (en vacances)'} à cette date</div>`:e.target.value?'<div class="msg ok">Date disponible ✅</div>':''};
