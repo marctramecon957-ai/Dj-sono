@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Sound &amp; Light 03</title>
+<title>Sound & Light 03</title>
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;600&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#050507;--card:#120a0d;--pink:#ff1e2d;--cyan:#ff8a92;--yel:#ffd23f;--txt:#f5f5f7}
+:root{--bg:#050507;--pink:#ff1e2d;--cyan:#ff8a92;--yel:#ffd23f;--txt:#f5f5f7}
 *{box-sizing:border-box}body{margin:0;font-family:Inter,sans-serif;color:var(--txt);background:radial-gradient(ellipse at 50% 0,#4a0710,transparent 60%),radial-gradient(ellipse at 50% 100%,#2a0308,transparent 55%),var(--bg);min-height:100vh;overflow-x:hidden}
 .beams{position:fixed;inset:0 0 35% 0;pointer-events:none;z-index:0;overflow:hidden}
 .beams i{position:absolute;top:-10%;width:90px;height:130%;background:linear-gradient(180deg,rgba(255,255,255,.55),rgba(150,200,255,.15) 40%,transparent 80%);filter:blur(10px);transform-origin:top center;opacity:.5;animation:sw 7s ease-in-out infinite alternate}
@@ -12,10 +12,9 @@
 .beams i:nth-child(4){left:70%;--a:15deg;--b:-20deg;animation-duration:8s}.beams i:nth-child(5){left:88%;--a:-16deg;--b:18deg;animation-duration:10s}
 @keyframes sw{from{transform:rotate(var(--a))}to{transform:rotate(var(--b))}}
 header,nav,main{position:relative;z-index:1}header{padding:26px 16px 0;text-align:center}
-h1,h2,h3,nav button,.fest{font-family:Anton,Impact,sans-serif;font-weight:400;letter-spacing:.5px;text-transform:uppercase}
+h1,h2,h3,nav button{font-family:Anton,Impact,sans-serif;font-weight:400;letter-spacing:.5px;text-transform:uppercase}
 .logo{margin:0;font-style:italic;transform:skew(-8deg);font-size:clamp(38px,9vw,84px);line-height:1;text-shadow:0 4px 26px rgba(255,30,45,.65)}
 .sub{color:var(--pink);letter-spacing:.5em;font-size:clamp(11px,2.4vw,18px);font-weight:600;margin:10px 0 2px;border-top:2px solid var(--pink);border-bottom:2px solid var(--pink);display:inline-block;padding:2px 14px}
-.fest{color:var(--pink);font-style:italic;font-size:clamp(22px,5vw,40px);transform:skew(-10deg);text-shadow:0 0 18px rgba(255,30,45,.7)}
 nav{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;padding:14px}
 nav button{background:rgba(0,0,0,.5);border:2px solid var(--pink);color:var(--txt);padding:8px 14px;border-radius:4px;cursor:pointer;font-size:14px;transform:skew(-8deg)}
 nav button.on,nav button:hover{background:var(--pink);box-shadow:0 0 20px var(--pink)}
@@ -37,7 +36,8 @@ table{width:100%;border-collapse:collapse;font-size:13px}td,th{padding:6px;borde
 #abt p{line-height:1.7;margin:8px 0;font-size:16px;color:#e8e8ee}#abt h2{font-size:clamp(22px,4.5vw,34px);color:var(--pink);margin:0 0 6px}
 .tag{padding:2px 8px;border-radius:10px;background:#4a1520;font-size:11px}.leg span{margin-right:12px;font-size:12px}
 </style></head><body>
-<div class="beams"><i></i><i></i><i></i><i></i><i></i></div><header><h1 id="ttl" class="logo">Sound &amp; Light 03</h1><div class="sub">SONORISATION</div></header>
+<div class="beams"><i></i><i></i><i></i><i></i><i></i></div>
+<header><h1 id="ttl" class="logo">Sound & Light 03</h1><div class="sub">SONORISATION</div></header>
 <nav id="nav"></nav>
 <main>
 <section id="home"><div class="card" id="abt"></div><div class="grid" id="hero"></div></section>
@@ -64,26 +64,35 @@ table{width:100%;border-collapse:collapse;font-size:13px}td,th{padding:6px;borde
 
 <section id="admin"><div id="login" class="card"><h2>Espace Admin</h2><label>Mot de passe</label><input type="password" id="pw"><button class="btn" onclick="login()">Connexion</button><div id="lm"></div></div>
 <div id="panel" style="display:none" class="adm">
-<div class="card"><h3>Accueil</h3><label>Titre du site</label><input id="a_t"><label>Prestations proposées aux clients (décoche pour cacher dans « Déposer un dossier »)</label><div class="pr"><input type="checkbox" id="s_DJ"><label for="s_DJ" style="margin:0;color:#fff">DJ</label><input type="checkbox" id="s_Artificier"><label for="s_Artificier" style="margin:0;color:#fff">Artificier</label><input type="checkbox" id="s_Lighter"><label for="s_Lighter" style="margin:0;color:#fff">Lighter</label></div><label>Texte de présentation de l'accueil (1ère ligne = titre, les lignes suivantes = paragraphes)</label><textarea id="a_a" style="min-height:150px"></textarea><label>📁 Importer des images / vidéos depuis ton ordinateur</label><input type="file" id="up_h" multiple accept="image/*,video/*" onchange="upl(this,'a_h')"><div id="upm"></div><label>Liste (1 lien par ligne, tu peux réordonner ou supprimer)</label><textarea id="a_h"></textarea><button class="btn s" onclick="saveSite()">Enregistrer</button></div>
-<div class="card"><h3>Contacts</h3><label>1 ligne par personne : Nom | Rôle | Téléphone | Email | Lien photo</label><textarea id="a_c"></textarea><label>📁 Importer une photo : clique dans la ligne de la personne, après le dernier « | », puis choisis le fichier</label><input type="file" id="up_c" accept="image/*" onchange="upl(this,'a_c')"><div id="upm2"></div><button class="btn s" onclick="saveC()">Enregistrer</button></div>
-<div class="card"><h3>Mails</h3><button class="btn s" onclick="tmail()">Envoyer un mail de test</button><div id="tm"></div></div><div class="card"><h3>Calendrier</h3><p style="font-size:12px">Clique sur un jour : Blanc → Rouge → Bleu → Blanc</p>
+<div class="card"><h3>Accueil</h3><label>Titre du site</label><input id="a_t">
+<label>Prestations proposées (décoche pour cacher dans « Déposer un dossier »)</label>
+<div class="pr"><input type="checkbox" id="s_DJ"><label for="s_DJ" style="margin:0;color:#fff">DJ</label><input type="checkbox" id="s_Artificier"><label for="s_Artificier" style="margin:0;color:#fff">Artificier</label><input type="checkbox" id="s_Lighter"><label for="s_Lighter" style="margin:0;color:#fff">Lighter</label></div>
+<label>Texte d'accueil (1ère ligne = titre, lignes suivantes = paragraphes)</label><textarea id="a_a" style="min-height:150px"></textarea>
+<label>📁 Importer des images / vidéos</label><input type="file" id="up_h" multiple accept="image/*,video/*" onchange="upl(this,'a_h')"><div id="upm"></div>
+<label>Liste (1 lien par ligne)</label><textarea id="a_h"></textarea><button class="btn s" onclick="saveSite()">Enregistrer</button></div>
+<div class="card"><h3>Contacts</h3><label>1 ligne par personne : Nom | Rôle | Téléphone | Email | Lien photo</label><textarea id="a_c"></textarea>
+<label>📁 Importer une photo : clique dans la ligne de la personne, après le dernier « | », puis choisis le fichier</label><input type="file" id="up_c" accept="image/*" onchange="upl(this,'a_c')"><div id="upm2"></div><button class="btn s" onclick="saveC()">Enregistrer</button></div>
+<div class="card"><h3>Mails</h3><button class="btn s" onclick="tmail()">Envoyer un mail de test</button><div id="tm"></div></div>
+<div class="card"><h3>Calendrier</h3><p style="font-size:12px">Clique sur un jour : Blanc → Rouge → Bleu → Blanc</p>
 <div class="bar"><button class="btn s" onclick="mv(-1)">◀</button><b id="mt2"></b><button class="btn s" onclick="mv(1)">▶</button></div><div id="ac"></div></div>
 <div class="card"><h3>Dossiers</h3><div id="ds" style="overflow:auto"></div></div>
 <div class="card"><h3>Dépenses / Budget / Revenus</h3>
 <form onsubmit="return addF(event)"><div class="row"><div><label>Type</label><select name="type"><option value="revenue">Revenu</option><option value="expense">Dépense</option><option value="budget">Budget</option></select></div>
-<div><label>Nom de famille / libellé</label><input name="name" required></div></div>
+<div><label>Libellé</label><input name="name" required></div></div>
 <div class="row"><div><label>Montant (€)</label><input type="number" step="0.01" min="0" name="amount" required></div><div><label>Date</label><input type="date" name="date" required></div></div>
 <label>Note</label><input name="note"><button class="btn">Ajouter</button></form>
 <div class="row"><div><label>Mois</label><input type="month" id="fm"></div><div><label>Année</label><input type="number" id="fy"></div></div>
 <div id="tot"></div><div style="overflow:auto"><table id="ft"></table></div></div>
 <button class="btn" onclick="localStorage.t='';location.reload()">Déconnexion</button></div></section>
 </main>
+
 <div id="pm" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:50;overflow:auto"><div class="card" style="max-width:560px;margin:30px auto">
 <h3 id="pm_t"></h3><p style="font-size:13px;color:#ccc;margin:4px 0 10px">1) Coche ce que le client a payé et mets le montant. 2) Ajoute une autre ligne si besoin. 3) Envoie le reçu.</p>
 <div id="pl"></div><div id="px"></div>
 <button class="btn s" type="button" onclick="addL()">+ Ajouter une autre ligne</button>
 <div class="bar" style="margin-top:16px;font-size:18px"><b>TOTAL</b><b id="pt" style="color:var(--pink)">0.00 €</b></div>
 <button class="btn" onclick="psend()">Envoyer le reçu au client</button><button class="btn" style="background:#333" onclick="$('#pm').style.display='none'">Annuler</button></div></div>
+
 <script>
 const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let T=localStorage.t||'',P={site:{hero:[]},contacts:[],calendar:{}},A={dossiers:[],finances:[]},cur=new Date();
@@ -94,51 +103,66 @@ function show(id){document.querySelectorAll('section').forEach(s=>s.classList.to
 const iso=(y,m,d)=>`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
 function calHtml(adm){const y=cur.getFullYear(),m=cur.getMonth(),f=(new Date(y,m,1).getDay()+6)%7,n=new Date(y,m+1,0).getDate();
 let h=['L','M','M','J','V','S','D'].map(x=>`<div class="h">${x}</div>`).join('')+'<div></div>'.repeat(f);
-for(let d=1;d<=n;d++){const k=iso(y,m,d),s={busy:1,vacation:2}[P.calendar[k]]||0;h+=`<div class="d d${s}" ${adm?`onclick="tog('${k}')"`:''}>${d}</div>`}return `<div class="cal">${h}</div>`}
+for(let d=1;d<=n;d++){const k=iso(y,m,d),s=({busy:1,vacation:2})[P.calendar[k]]||0;h+=`<div class="d d${s}" ${adm?`onclick="tog('${k}')"`:''}>${d}</div>`}
+return `<div class="cal">${h}</div>`}
 function drawCal(){const t=cur.toLocaleDateString('fr-FR',{month:'long',year:'numeric'});$('#mt').textContent=$('#mt2').textContent=t;$('#pc').innerHTML=calHtml(0);$('#ac').innerHTML=calHtml(1)}
 const mv=n=>{cur=new Date(cur.getFullYear(),cur.getMonth()+n,1);drawCal()};
 async function tog(k){const c=P.calendar[k];if(!c)P.calendar[k]='busy';else if(c=='busy')P.calendar[k]='vacation';else delete P.calendar[k];drawCal();await api('/admin/calendar','PUT',P.calendar)}
 const DEF="Des jeunes passionnés au service de vos soirées\nNous sommes une équipe de jeunes passionnés par la musique, la lumière et l'événementiel. DJ, lumières, effets pyrotechniques : nous mettons toute notre énergie pour faire de votre soirée un moment inoubliable, de l'anniversaire entre amis au festival.\nUne idée, une date, un budget ? Déposez votre dossier, nous vous répondons rapidement.";
-function aboutRender(){const ab=(P.site.about||DEF).split('\n').filter(x=>x.trim());$('#abt').style.display=ab.length?'':'none';$('#abt').innerHTML=ab.length?`<h2>${esc(ab[0])}</h2>`+ab.slice(1).map(x=>`<p>${esc(x)}</p>`).join(''):''}
+function aboutRender(){const ab=(P.site.about||DEF).split('\n').filter(x=>x.trim());$('#abt').style.display=ab.length?'':'none';
+$('#abt').innerHTML=ab.length?`<h2>${esc(ab[0])}</h2>`+ab.slice(1).map(x=>`<p>${esc(x)}</p>`).join(''):''}
 function svcRender(){const sv=P.site.services||{},on=['DJ','Artificier','Lighter'].filter(k=>sv[k]!==false),sel=$('#f select[name=service]'),old=sel.value;
-sel.innerHTML=on.map(k=>`<option>${k}</option>`).join('');if(on.includes(old))sel.value=old;
-$('#f').style.display=on.length?'':'none';$('#svm').innerHTML=on.length?'':'<div class="msg ko">Aucune prestation n’est proposée pour le moment.</div>'}
+sel.innerHTML=on.map(k=>`<option>${k}</option>`).join('');if(on.includes(old))sel.value=old;$('#f').style.display=on.length?'':'none';
+$('#svm').innerHTML=on.length?'':'<div class="msg ko">Aucune prestation n’est proposée pour le moment.</div>'}
 function render(){aboutRender();svcRender();document.title=$('#ttl').textContent=P.site.title||'Sound & Light 03';
-$('#hero').innerHTML=(P.site.hero||[]).map(u=>/\.(mp4|webm|mov)(\?|$)/i.test(u)?`<video src="${esc(u)}" controls muted loop playsinline></video>`:`<img src="${esc(u)}" alt="">`).join('')||'<p>Bientôt du contenu…</p>';
+$('#hero').innerHTML=(P.site.hero||[]).map(u=>/\.(mp4|webm|mov)(\?|$)/i.test(u)?`<video src="${esc(u)}" controls muted loop playsinline></video>`:`<img src="${esc(u)}" alt="" loading="lazy">`).join('')||'<p>Bientôt du contenu…</p>';
 $('#cts').innerHTML=P.contacts.map(c=>`<div class="card ct">${c.photo?`<img src="${esc(c.photo)}" alt="">`:''}<div><h3>${esc(c.name)}</h3><div>${esc(c.role)}</div>${c.phone?`<div>📞 <a style="color:var(--yel)" href="tel:${esc(c.phone)}">${esc(c.phone)}</a></div>`:''}${c.email?`<div>✉️ <a style="color:var(--cyan)" href="mailto:${esc(c.email)}">${esc(c.email)}</a></div>`:''}</div></div>`).join('');drawCal()}
 $('#fd').onchange=e=>{const s=P.calendar[e.target.value];$('#dmsg').innerHTML=s?`<div class="msg ko">🔴 ${s=='busy'?'Non disponible':'Non disponible (en vacances)'} à cette date</div>`:e.target.value?'<div class="msg ok">Date disponible ✅</div>':''};
-async function sendD(e){e.preventDefault();const b=Object.fromEntries(new FormData(e.target));try{const r=await api('/dossier','POST',b);
-$('#res').innerHTML=r.status=='refused'?'<div class="msg ko">Date non disponible. Un message vous a été envoyé.</div>':'<div class="msg ok">Dossier envoyé ! Vous allez recevoir un mail et un SMS.</div>';e.target.reset();$('#dmsg').innerHTML=''}catch(x){$('#res').innerHTML=`<div class="msg ko">${esc(x)}</div>`}return false}
+async function sendD(e){e.preventDefault();const b=Object.fromEntries(new FormData(e.target));
+try{const r=await api('/dossier','POST',b);$('#res').innerHTML=r.status=='refused'?'<div class="msg ko">Date non disponible. Un message vous a été envoyé.</div>':'<div class="msg ok">Dossier envoyé ! Vous allez recevoir un mail.</div>';e.target.reset();$('#dmsg').innerHTML=''}
+catch(x){$('#res').innerHTML=`<div class="msg ko">${esc(x)}</div>`}return false}
 async function login(){try{T=(await api('/login','POST',{password:$('#pw').value})).token;localStorage.t=T;openAdmin()}catch(x){$('#lm').innerHTML=`<div class="msg ko">${esc(x)}</div>`}}
 async function openAdmin(){try{A=await api('/admin/all')}catch{localStorage.t='';return}
-$('#login').style.display='none';$('#panel').style.display='block';$('#a_t').value=P.site.title;$('#a_a').value=P.site.about||DEF;['DJ','Artificier','Lighter'].forEach(k=>$('#s_'+k).checked=(P.site.services||{})[k]!==false);$('#a_h').value=(P.site.hero||[]).join('\n');
-$('#a_c').value=P.contacts.map(c=>[c.name,c.role,c.phone,c.email,c.photo].join(' | ')).join('\n');
+$('#login').style.display='none';$('#panel').style.display='block';$('#a_t').value=P.site.title;$('#a_a').value=P.site.about||DEF;
+['DJ','Artificier','Lighter'].forEach(k=>$('#s_'+k).checked=(P.site.services||{})[k]!==false);
+$('#a_h').value=(P.site.hero||[]).join('\n');$('#a_c').value=P.contacts.map(c=>[c.name,c.role,c.phone,c.email,c.photo].join(' | ')).join('\n');
 const n=new Date();$('#fm').value=n.toISOString().slice(0,7);$('#fy').value=n.getFullYear();$('#fm').onchange=$('#fy').oninput=drawA;drawA()}
 async function saveSite(){await api('/admin/site','PUT',{title:$('#a_t').value,about:$('#a_a').value,services:{DJ:$('#s_DJ').checked,Artificier:$('#s_Artificier').checked,Lighter:$('#s_Lighter').checked},hero:$('#a_h').value.split('\n').map(x=>x.trim()).filter(Boolean)});await load();alert('Enregistré')}
 async function saveC(){await api('/admin/contacts','PUT',$('#a_c').value.split('\n').filter(x=>x.trim()).map(l=>{const [name,role,phone,email,photo]=l.split('|').map(x=>x.trim());return{name,role,phone,email,photo}}));await load();alert('Enregistré')}
 const ST={pending:'En attente',accepted:'Accepté',refused:'Refusé',paid:'Payé'};
-function drawA(){$('#ds').innerHTML='<table><tr><th>Client</th><th>Prestation</th><th>Date</th><th>Budget</th><th>Contact</th><th>Lieu</th><th>Statut</th><th></th></tr>'+A.dossiers.map(d=>`<tr><td>${esc(d.lastName)}</td><td>${esc(d.service)}</td><td>${esc(d.date)}</td><td>${d.budgetMin}–${d.budgetMax} €</td><td>${esc(d.phone)}<br>${esc(d.email)}</td><td>${esc(d.address)}</td><td><span class="tag">${ST[d.status]}</span></td><td>${d.status=='pending'?`<button class="btn s" onclick="dec('${d.id}',1)">Accepter</button><button class="btn s" onclick="dec('${d.id}',0)">Refuser</button>`:''}${d.status=='accepted'?`<button class="btn s" onclick="pay('${d.id}')">Encaisser + reçu</button>`:''}</td></tr>`).join('')+'</table>';
+function drawA(){
+$('#ds').innerHTML='<table><tr><th>Client</th><th>Prestation</th><th>Date</th><th>Budget</th><th>Contact</th><th>Lieu</th><th>Statut</th><th></th></tr>'+A.dossiers.map(d=>`<tr><td>${esc(d.lastName)}</td><td>${esc(d.service)}</td><td>${esc(d.date)}</td><td>${d.budgetMin}–${d.budgetMax} €</td><td>${esc(d.phone)}<br>${esc(d.email)}</td><td>${esc(d.address)}</td><td><span class="tag">${ST[d.status]}</span></td><td>${d.status=='pending'?`<button class="btn s" onclick="dec('${d.id}',1)">Accepter</button><button class="btn s" onclick="dec('${d.id}',0)">Refuser</button>`:''}${d.status=='accepted'?`<button class="btn s" onclick="pay('${d.id}')">Encaisser + reçu</button>`:''}</td></tr>`).join('')+'</table>';
 const m=$('#fm').value,y=$('#fy').value,sum=(t,p)=>A.finances.filter(f=>f.type==t&&f.date.startsWith(p)).reduce((a,f)=>a+f.amount,0),e=x=>x.toFixed(2)+' €';
-$('#tot').innerHTML=`<table><tr><th></th><th>Mois ${m}</th><th>Année ${y}</th></tr>${[['Revenus','revenue'],['Dépenses','expense'],['Budget','budget']].map(r=>`<tr><td>${r[0]}</td><td>${e(sum(r[1],m))}</td><td>${e(sum(r[1],y))}</td></tr>`).join('')}<tr><td><b>Solde (revenus − dépenses)</b></td><td><b>${e(sum('revenue',m)-sum('expense',m))}</b></td><td><b>${e(sum('revenue',y)-sum('expense',y))}</b></td></tr></table>`;
+$('#tot').innerHTML=`<table><tr><th></th><th>Mois ${esc(m)}</th><th>Année ${esc(y)}</th></tr>${[['Revenus','revenue'],['Dépenses','expense'],['Budget','budget']].map(r=>`<tr><td>${r[0]}</td><td>${e(sum(r[1],m))}</td><td>${e(sum(r[1],y))}</td></tr>`).join('')}<tr><td><b>Solde (revenus − dépenses)</b></td><td><b>${e(sum('revenue',m)-sum('expense',m))}</b></td><td><b>${e(sum('revenue',y)-sum('expense',y))}</b></td></tr></table>`;
 $('#ft').innerHTML='<tr><th>Date</th><th>Type</th><th>Nom</th><th>Montant</th><th>Note</th><th></th></tr>'+[...A.finances].sort((a,b)=>b.date.localeCompare(a.date)).map(f=>`<tr><td>${f.date}</td><td>${{revenue:'Revenu',expense:'Dépense',budget:'Budget'}[f.type]}</td><td>${esc(f.name)}</td><td>${e(f.amount)}</td><td>${esc(f.note)}</td><td><button class="btn s" onclick="delF('${f.id}')">✕</button></td></tr>`).join('')}
-async function upl(inp,t){const c=P.upload||{},m=$(t=='a_h'?'#upm':'#upm2');if(!c.cloud||!c.preset){m.innerHTML='<div class="msg ko">Importation non configurée : ajoute CLOUDINARY_CLOUD et CLOUDINARY_PRESET dans Render</div>';inp.value='';return}
-const ta=$('#'+t);for(const f of inp.files){m.textContent='Envoi de '+f.name+'…';try{const fd=new FormData();fd.append('file',f);fd.append('upload_preset',c.preset);const j=await(await fetch(`https://api.cloudinary.com/v1_1/${c.cloud}/auto/upload`,{method:'POST',body:fd})).json();if(!j.secure_url)throw(j.error&&j.error.message)||'Échec';
-if(t=='a_h')ta.value=(ta.value.trim()?ta.value.trim()+'\n':'')+j.secure_url;else{const p=ta.selectionStart??ta.value.length;ta.value=ta.value.slice(0,p)+j.secure_url+ta.value.slice(p)}m.innerHTML='<div class="msg ok">✅ '+esc(f.name)+' importé — clique sur Enregistrer</div>'}catch(x){m.innerHTML='<div class="msg ko">'+esc(x)+'</div>'}}inp.value=''}
+async function upl(inp,t){const c=P.upload||{},m=$(t=='a_h'?'#upm':'#upm2');
+if(!c.cloud||!c.preset){m.innerHTML='<div class="msg ko">Importation non configurée : ajoute CLOUDINARY_CLOUD et CLOUDINARY_PRESET dans Render</div>';inp.value='';return}
+const ta=$('#'+t);
+for(const f of inp.files){m.textContent='Envoi de '+f.name+'…';
+try{const fd=new FormData();fd.append('file',f);fd.append('upload_preset',c.preset);
+const j=await(await fetch(`https://api.cloudinary.com/v1_1/${c.cloud}/auto/upload`,{method:'POST',body:fd})).json();
+if(!j.secure_url)throw(j.error&&j.error.message)||'Échec';
+if(t=='a_h')ta.value=(ta.value.trim()?ta.value.trim()+'\n':'')+j.secure_url;else{const p=ta.selectionStart??ta.value.length;ta.value=ta.value.slice(0,p)+j.secure_url+ta.value.slice(p)}
+m.innerHTML='<div class="msg ok">✅ '+esc(f.name)+' importé — clique sur Enregistrer</div>'}catch(x){m.innerHTML='<div class="msg ko">'+esc(x)+'</div>'}}
+inp.value=''}
 async function tmail(){$('#tm').textContent='Envoi…';try{const r=await api('/admin/test-mail','POST');$('#tm').innerHTML=r.error?`<div class="msg ko">❌ ${esc(r.error)}</div>`:`<div class="msg ok">✅ Mail envoyé à ${esc(r.to)} (regarde aussi les spams)</div>`}catch(x){$('#tm').innerHTML=`<div class="msg ko">${esc(x)}</div>`}}
 async function dec(id,a){await api('/admin/decision/'+id,'POST',{accept:a});await refresh()}
 const PRE=['DJ','Artificier','Lighter','Location sono','Location lumières','Déplacement','Acompte'];let PID=null;
 function pay(id){PID=id;const d=A.dossiers.find(x=>x.id==id);$('#pm_t').textContent='Reçu — '+d.lastName+' ('+d.service+')';
-$('#pl').innerHTML=PRE.map((n,i)=>`<div class="pr"><input type="checkbox" id="c${i}" ${n==d.service?'checked':''} onchange="ptot()"><label for="c${i}" style="margin:0;flex:1;color:#fff;font-size:15px">${n}</label><input type="number" min="0" step="0.01" id="m${i}" placeholder="Montant €" oninput="ptot()" style="width:130px"></div>`).join('');
+$('#pl').innerHTML=PRE.map((n,i)=>`<div class="pr"><input type="checkbox" id="c${i}" onchange="ptot()"><label for="c${i}" style="margin:0;flex:1;color:#fff;font-size:15px">${n}</label><input type="number" min="0" step="0.01" id="m${i}" placeholder="Montant €" oninput="ptot()" style="width:130px"></div>`).join('');
 $('#px').innerHTML='';$('#pm').style.display='block';ptot()}
 function addL(){const e=document.createElement('div');e.className='pr';e.innerHTML='<input placeholder="Autre prestation" class="xl" style="flex:1"><input type="number" min="0" step="0.01" placeholder="Montant €" class="xm" oninput="ptot()" style="width:130px"><button class="btn s" type="button" onclick="this.parentNode.remove();ptot()">✕</button>';$('#px').appendChild(e)}
-function plines(){const L=[];PRE.forEach((n,i)=>{const a=parseFloat($('#m'+i).value);if($('#c'+i).checked&&a>0)L.push({label:n,amount:a})});document.querySelectorAll('#px .pr').forEach(r=>{const l=r.querySelector('.xl').value.trim(),a=parseFloat(r.querySelector('.xm').value);if(l&&a>0)L.push({label:l,amount:a})});return L}
+function plines(){const L=[];PRE.forEach((n,i)=>{const a=parseFloat($('#m'+i).value);if($('#c'+i).checked&&a>0)L.push({label:n,amount:a})});
+document.querySelectorAll('#px .pr').forEach(r=>{const l=r.querySelector('.xl').value.trim(),a=parseFloat(r.querySelector('.xm').value);if(l&&a>0)L.push({label:l,amount:a})});return L}
 function ptot(){$('#pt').textContent=plines().reduce((a,l)=>a+l.amount,0).toFixed(2)+' €'}
-async function psend(){const miss=PRE.filter((n,i)=>$('#c'+i).checked&&!(parseFloat($('#m'+i).value)>0));if(miss.length){alert('Mets un montant pour : '+miss.join(', ')+' (ou décoche la case)');return}
-const lines=plines();if(!lines.length){alert('Coche au moins une prestation et mets un montant');return}try{await api('/admin/pay/'+PID,'POST',{lines});$('#pm').style.display='none';await refresh()}catch(x){alert(x)}}
+async function psend(){const miss=PRE.filter((n,i)=>$('#c'+i).checked&&!(parseFloat($('#m'+i).value)>0));
+if(miss.length){alert('Mets un montant pour : '+miss.join(', ')+' (ou décoche la case)');return}
+const lines=plines();if(!lines.length){alert('Coche au moins une prestation et mets un montant');return}
+try{await api('/admin/pay/'+PID,'POST',{lines});$('#pm').style.display='none';await refresh()}catch(x){alert(x)}}
 async function addF(e){e.preventDefault();await api('/admin/finance','POST',Object.fromEntries(new FormData(e.target)));e.target.reset();await refresh();return false}
 async function delF(id){if(confirm('Supprimer ?')){await api('/admin/finance/'+id,'DELETE');await refresh()}}
 async function refresh(){A=await api('/admin/all');drawA()}
 async function load(){P=await(await fetch('/api/public',{cache:'no-store'})).json();render()}
-setInterval(async()=>{if(document.hidden)return;try{const p=await(await fetch('/api/public',{cache:'no-store'})).json();if(JSON.stringify(p)!==JSON.stringify(P)){P=p;render()}if(T&&$('#panel').style.display=='block'){A=await api('/admin/all');drawA()}}catch{}},15000);
+setInterval(async()=>{if(document.hidden)return;try{const p=await(await fetch('/api/public',{cache:'no-store'})).json();if(JSON.stringify(p)!==JSON.stringify(P)){P=p;render()}if(T&&$('#panel').style.display==='block'){A=await api('/admin/all');drawA()}}catch{}},15000);
 show('home');load().then(()=>{if(T)openAdmin()});
 </script></body></html>
