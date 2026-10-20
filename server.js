@@ -12,7 +12,7 @@ const IDX = [path.join(__dirname, 'public', 'index.html'), path.join(__dirname, 
 app.get('/', (_, res) => res.set('Cache-Control', 'no-store').sendFile(IDX));
 
 const FILE = process.env.DATA_FILE || 'data.json';
-let D = { site: { title: 'Sound & Light', hero: [] }, contacts: [], calendar: {}, dossiers: [], finances: [] };
+let D = { site: { title: 'Sound & Light 03', hero: [] }, contacts: [], calendar: {}, dossiers: [], finances: [] };
 try { D = { ...D, ...JSON.parse(fs.readFileSync(FILE)) }; } catch {}
 // Sauvegarde durable : Upstash Redis (gratuit, HTTPS) si configuré, sinon fichier local
 const UP = process.env.UPSTASH_URL, UT = process.env.UPSTASH_TOKEN;
@@ -28,17 +28,18 @@ const mailer = process.env.SMTP_HOST ? nodemailer.createTransport({ host: proces
   auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS } }) : null;
 // Render (offre gratuite) bloque le SMTP : on envoie par l'API HTTPS de Brevo
 const mail = async (to, subject, text, html) => {
+  if (process.env.MAIL_PREVIEW_DIR) { fs.writeFileSync(path.join(process.env.MAIL_PREVIEW_DIR, (to + '_' + subject).replace(/[^a-z0-9]+/gi, '_') + '.html'), html || text); return null; }
   try {
     text = text + sigText();
     if (process.env.MAIL_SCRIPT_URL) {
       const r = await fetch(process.env.MAIL_SCRIPT_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ secret: process.env.MAIL_SCRIPT_SECRET || '', to, subject, text, name: process.env.MAIL_NAME || 'Sound & Light', html }) });
+        body: JSON.stringify({ secret: process.env.MAIL_SCRIPT_SECRET || '', to, subject, text, name: process.env.MAIL_NAME || 'Sound & Light 03', html }) });
       const t = await r.text();
       if (t.trim() !== 'ok') throw new Error('Google Script : ' + t.slice(0, 200));
     } else if (process.env.BREVO_API_KEY) {
       if (!process.env.MAIL_FROM) return 'MAIL_FROM manquant dans Render';
       const r = await fetch('https://api.brevo.com/v3/smtp/email', { method: 'POST', headers: { 'api-key': process.env.BREVO_API_KEY, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sender: { name: process.env.MAIL_NAME || 'Sound & Light', email: process.env.MAIL_FROM }, to: [{ email: to }], subject, textContent: text, ...(html && { htmlContent: html }) }) });
+        body: JSON.stringify({ sender: { name: process.env.MAIL_NAME || 'Sound & Light 03', email: process.env.MAIL_FROM }, to: [{ email: to }], subject, textContent: text, ...(html && { htmlContent: html }) }) });
       if (!r.ok) throw new Error('Brevo ' + r.status + ' ' + await r.text());
     } else if (mailer) await mailer.sendMail({ from: process.env.MAIL_FROM || process.env.SMTP_USER, to, subject, text, html });
     else return 'Aucun service mail configuré (MAIL_SCRIPT_URL ou BREVO_API_KEY manquant)';
@@ -58,11 +59,29 @@ const sms = async (to, body) => {
 const E = x => String(x ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const fd = d => { try { return new Date(d + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }); } catch { return d; } };
 const eur = n => Number(n).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });
-const CO = () => ({ name: process.env.COMPANY_NAME || process.env.MAIL_NAME || (D.site && D.site.title) || 'Sound & Light', email: process.env.COMPANY_EMAIL || process.env.ADMIN_EMAIL || '', addr: process.env.COMPANY_ADDRESS || '', siret: process.env.COMPANY_SIRET || '', tva: process.env.COMPANY_TVA || '', phone: process.env.COMPANY_PHONE || '', logo: process.env.COMPANY_LOGO || '' });
+const CO = () => ({ name: process.env.COMPANY_NAME || process.env.MAIL_NAME || (D.site && D.site.title) || 'Sound & Light 03', email: process.env.COMPANY_EMAIL || process.env.ADMIN_EMAIL || '', addr: process.env.COMPANY_ADDRESS || '', siret: process.env.COMPANY_SIRET || '', tva: process.env.COMPANY_TVA || '', phone: process.env.COMPANY_PHONE || '', logo: process.env.COMPANY_LOGO || '' });
 const sigText = () => { const c = CO(); return '\n\n--\n' + [c.name, c.addr, c.phone && 'Tél. ' + c.phone, c.email, c.siret && 'SIRET ' + c.siret, c.tva && 'TVA ' + c.tva].filter(Boolean).join('\n'); };
-const p = t => `<p style="font-size:15px;line-height:1.6;margin:0 0 12px">${t}</p>`;
-const rows = a => `<table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin:12px 0">${a.map(r => `<tr><td style="padding:9px 0;border-bottom:1px solid #eee;color:#777;width:38%">${E(r[0])}</td><td style="padding:9px 0;border-bottom:1px solid #eee;font-weight:bold">${E(r[1])}</td></tr>`).join('')}</table>`;
-const tpl = (title, inner) => { const c = CO(); return `<!doctype html><html><body style="margin:0;background:#f3f3f5;font-family:Arial,Helvetica,sans-serif;color:#1a1a1f"><table width="100%" cellpadding="0" cellspacing="0" style="background:#f3f3f5;padding:24px 0"><tr><td align="center"><table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#fff;border-radius:10px;overflow:hidden"><tr><td style="background:#0b0507;padding:26px 24px;text-align:center;border-bottom:4px solid #ff1e2d">${c.logo ? `<img src="${E(c.logo)}" alt="${E(c.name)}" style="max-height:70px">` : `<div style="font:italic 900 30px 'Arial Black',Arial,sans-serif;color:#fff;letter-spacing:1px;text-transform:uppercase">${E(c.name.replace(/\s*sonorisation\s*$/i, ''))}</div><div style="color:#ff1e2d;letter-spacing:6px;font-size:12px;margin-top:6px">SONORISATION</div>`}</td></tr><tr><td style="padding:28px 28px 8px"><h1 style="margin:0 0 14px;font-size:22px;color:#b30012">${E(title)}</h1>${inner}</td></tr><tr><td style="padding:18px 28px 26px;font-size:12px;color:#777;border-top:1px solid #eee"><b style="color:#444;font-size:13px">${E(c.name)}</b>${c.addr ? '<br>' + E(c.addr) : ''}${c.phone ? '<br>Tél. ' + E(c.phone) : ''}${c.email ? '<br>' + E(c.email) : ''}${c.siret ? '<br>SIRET ' + E(c.siret) : ''}${c.tva ? ' · TVA ' + E(c.tva) : ''}</td></tr></table></td></tr></table></body></html>`; };
+const p = t => `<p style="font-size:15px;line-height:1.6;margin:0 0 12px;color:#e6e6ea">${t}</p>`;
+const rows = a => `<table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse">${a.map((r, k) => `<tr><td style="padding:11px 0;${k ? 'border-top:1px solid #2c2c34;' : ''}color:#a9a9b3;width:36%;font-size:14px">${E(r[0])}</td><td style="padding:11px 0;${k ? 'border-top:1px solid #2c2c34;' : ''}font-weight:bold;color:#ffffff;font-size:14px">${E(r[1])}</td></tr>`).join('')}</table>`;
+const card = h => `<table width="100%" cellpadding="0" cellspacing="0" style="margin:14px 0;background:#1b1b21;border:1px solid #2c2c34;border-radius:12px"><tr><td style="padding:6px 20px">${h}</td></tr></table>`;
+const TRK = ['Dossier reçu', 'Validation', 'Accepté', 'Payé'];
+const tracker = st => {
+  const m = { pending: { d: 1, c: 1 }, accepted: { d: 3, c: 3 }, paid: { d: 4 }, refused: { d: 1, f: 1 } }[st]; if (!m) return '';
+  const col = i => m.f === i ? '#e5384a' : i < m.d ? '#2bb673' : i === m.c ? '#f5a623' : '#3a3a42';
+  const bar = i => i < 0 || i > 2 ? 'transparent' : m.f === i + 1 ? '#e5384a' : (i < m.d && (i + 1 < m.d || i + 1 === m.c)) ? '#2bb673' : '#3a3a42';
+  const seg = c => `<td style="padding:0 3px"><div style="height:4px;line-height:4px;font-size:0;border-radius:2px;background:${c}">&nbsp;</div></td>`;
+  const cell = i => `<td width="25%" valign="top" align="center"><table width="100%" cellpadding="0" cellspacing="0"><tr>${seg(bar(i - 1))}<td width="38"><div style="width:38px;height:38px;line-height:38px;border-radius:19px;background:${col(i)};color:#ffffff;font:bold 16px/38px Arial,sans-serif;text-align:center">${m.f === i ? '✕' : i < m.d ? '✓' : i + 1}</div></td>${seg(bar(i))}</tr></table><div style="font:bold 12px Arial,sans-serif;color:${m.f === i ? '#ff7a88' : (i < m.d || i === m.c) ? '#ffffff' : '#8e8e98'};margin-top:8px">${m.f === i ? 'Refusé' : TRK[i]}</div></td>`;
+  return `<table width="100%" cellpadding="0" cellspacing="0" style="margin:4px 0 24px"><tr>${[0, 1, 2, 3].map(cell).join('')}</tr></table>`;
+};
+const BADGE = { pending: ['#f5a623', '⏳'], accepted: ['#2bb673', '✔'], refused: ['#e5384a', '✕'], paid: ['#2bb673', '€'], admin: ['#ff1e2d', '✉'], ok: ['#2bb673', '✔'] };
+const tpl = (title, inner, o = {}) => {
+  const c = CO(), site = process.env.SITE_URL || '', ban = process.env.COMPANY_BANNER || '', nm = c.name.replace(/\s*sonorisation\s*$/i, ''), b = BADGE[o.st];
+  const cta = o.cta && site ? `<table align="center" cellpadding="0" cellspacing="0" style="margin:24px auto 6px"><tr><td bgcolor="#c4101c" style="border-radius:8px"><a href="${E(site)}" style="display:inline-block;padding:15px 36px;color:#ffffff;font:bold 15px Arial,sans-serif;text-decoration:none">${E(o.cta)}</a></td></tr></table>` : '';
+  const badge = b ? `<table align="center" cellpadding="0" cellspacing="0" style="margin:26px auto 0"><tr><td align="center" bgcolor="${b[0]}" width="72" height="72" style="border-radius:36px;font:bold 34px/72px Arial,sans-serif;color:#ffffff">${b[1]}</td></tr></table>` : '';
+  const bg = ban ? `background="${E(ban)}" style="background-image:url('${E(ban)}');background-size:cover;background-position:center;` : 'style="background-image:linear-gradient(180deg,#4a0710,#16090c);';
+  const foot = `<b style="color:#cfcfd6;font-size:13px">${E(c.name)}</b>${c.addr ? '<br>' + E(c.addr) : ''}${c.phone ? '<br>Tél. ' + E(c.phone) : ''}${c.email ? '<br>' + E(c.email) : ''}${c.siret ? '<br>SIRET ' + E(c.siret) : ''}${c.tva ? ' · TVA ' + E(c.tva) : ''}`;
+  return `<!doctype html><html><body style="margin:0;background:#0b0b0d;font-family:Arial,Helvetica,sans-serif;color:#e6e6ea"><table width="100%" cellpadding="0" cellspacing="0" bgcolor="#0b0b0d"><tr><td align="center" style="padding:24px 12px"><table width="600" cellpadding="0" cellspacing="0" bgcolor="#131316" style="max-width:600px;width:100%;border-radius:16px;overflow:hidden"><tr><td align="center" bgcolor="#2a0409" ${bg}padding:34px 24px 32px"><div style="font:italic 900 26px 'Arial Black',Arial,sans-serif;color:#ffffff;text-transform:uppercase;letter-spacing:1px">${E(nm)}</div><div style="color:#ff5a66;letter-spacing:6px;font:bold 11px Arial,sans-serif;margin-top:6px">SONORISATION</div>${badge}<div style="font:italic 900 30px 'Arial Black',Arial,sans-serif;color:#ffffff;text-transform:uppercase;line-height:1.15;margin-top:18px">${E(title)}</div>${o.sub ? `<div style="font:15px/1.5 Arial,sans-serif;color:#e8c9ce;margin-top:10px">${E(o.sub)}</div>` : ''}</td></tr><tr><td style="height:4px;line-height:4px;font-size:0;background:#ff1e2d">&nbsp;</td></tr><tr><td style="padding:28px 30px 12px;font-size:15px;line-height:1.6;color:#e6e6ea">${tracker(o.st)}${inner}${cta}</td></tr><tr><td style="padding:20px 30px 28px;font-size:12px;line-height:1.6;color:#8e8e98;border-top:1px solid #2a2a30">${foot}<br><span style="color:#6f6f79">Une question ? Répondez simplement à ce mail.</span></td></tr></table></td></tr></table></body></html>`;
+};
 const both = (m, ph, sub, txt, html) => { Promise.all([m && mail(m, sub, txt, html), ph && sms(ph, txt.slice(0, 300))]).catch(() => {}); };
 
 // ---- Auth admin ----
@@ -87,19 +106,22 @@ app.post('/api/dossier', async (req, res) => {
   d.status = busy ? 'refused' : 'pending';
   D.dossiers.unshift(d); save();
   const resume = `${d.service} le ${fd(d.date)} — ${d.lastName}\nBudget : ${d.budgetMin}–${d.budgetMax} €\nLieu : ${d.address}\nTel : ${d.phone} / ${d.email}`;
-  const tbl = rows([['Prestation', d.service], ['Date', fd(d.date)], ['Nom', d.lastName], ['Budget', eur(d.budgetMin) + ' – ' + eur(d.budgetMax)], ['Lieu', d.address], ['Téléphone', d.phone], ['E-mail', d.email]]);
+  const budget = eur(d.budgetMin) + ' – ' + eur(d.budgetMax);
+  const summary = card(rows([['Prestation', d.service], ['Date', fd(d.date)], ['Lieu', d.address], ['Budget', budget]]));
+  const full = card(rows([['Prestation', d.service], ['Date', fd(d.date)], ['Nom', d.lastName], ['Budget', budget], ['Lieu', d.address], ['Téléphone', d.phone], ['E-mail', d.email]]));
   both(process.env.ADMIN_EMAIL, process.env.ADMIN_PHONE, `Nouveau dossier ${d.lastName}`, `Nouveau dossier${busy ? ' (date indisponible)' : ''}\n${resume}`,
-    tpl('Nouveau dossier', p(busy ? 'Un client a déposé un dossier pour une <b>date indisponible</b> (un refus automatique lui a été envoyé).' : 'Un client vient de déposer un dossier. Tu peux l’accepter ou le refuser dans l’espace admin.') + tbl));
+    tpl('Nouveau dossier', p(busy ? 'Un client a déposé un dossier pour une <b>date indisponible</b> : un refus automatique lui a été envoyé.' : 'Un client vient de déposer un dossier. Tu peux l’accepter ou le refuser dans l’espace admin.') + full, { st: 'admin', sub: `${d.lastName} · ${d.service} · ${fd(d.date)}`, cta: 'Ouvrir l’espace admin' }));
   both(d.email, d.phone, busy ? 'Date non disponible' : 'Dossier bien reçu',
     busy ? `Bonjour ${d.lastName}, nous ne sommes malheureusement pas disponibles le ${fd(d.date)}.` : `Bonjour ${d.lastName}, votre dossier est bien reçu. Réponse très prochainement.\n${resume}`,
-    tpl(busy ? 'Date non disponible' : 'Dossier bien reçu', p(`Bonjour ${E(d.lastName)},`) + (busy ? p(`Merci pour votre demande. Nous ne sommes malheureusement <b>pas disponibles le ${E(fd(d.date))}</b>. N’hésitez pas à nous proposer une autre date.`) : p('Nous avons bien reçu votre dossier. Nous revenons vers vous très rapidement pour confirmer notre disponibilité.') + tbl)));
+    busy ? tpl('Date non disponible', p(`Bonjour ${E(d.lastName)},`) + p(`Merci pour votre demande. Nous ne sommes malheureusement <b>pas disponibles le ${E(fd(d.date))}</b>. N’hésitez pas à nous proposer une autre date, nous ferons le maximum pour vous aider.`) + summary, { st: 'refused', sub: 'Nous ne pouvons pas assurer cette date.', cta: 'Proposer une autre date' })
+      : tpl('Dossier bien reçu', p(`Bonjour ${E(d.lastName)},`) + p('Merci pour votre confiance ! Nous avons bien reçu votre dossier. Nous vérifions notre disponibilité et revenons vers vous très rapidement.') + summary, { st: 'pending', sub: 'Votre dossier est en attente de validation.' }));
   res.json({ ok: true, status: d.status });
 });
 
 // ---- Admin ----
 app.get('/api/admin/all', adm, (_, res) => res.json({ dossiers: D.dossiers, finances: D.finances }));
 app.put('/api/admin/site', adm, (req, res) => { const sv = req.body.services || {};
-  D.site = { title: String(req.body.title || 'Sound & Light'), hero: (req.body.hero || []).map(String), about: String(req.body.about || '').slice(0, 3000),
+  D.site = { title: String(req.body.title || 'Sound & Light 03'), hero: (req.body.hero || []).map(String), about: String(req.body.about || '').slice(0, 3000),
     services: { DJ: sv.DJ !== false, Artificier: sv.Artificier !== false, Lighter: sv.Lighter !== false } }; save(); res.json({ ok: 1 }); });
 app.put('/api/admin/contacts', adm, (req, res) => { D.contacts = req.body.map(c => ({ name: String(c.name), role: String(c.role || ''), phone: String(c.phone || ''), email: String(c.email || ''), photo: String(c.photo || '') })); save(); res.json({ ok: 1 }); });
 app.put('/api/admin/calendar', adm, (req, res) => { D.calendar = req.body; save(); res.json({ ok: 1 }); });
@@ -108,9 +130,11 @@ app.post('/api/admin/decision/:id', adm, async (req, res) => {
   const d = D.dossiers.find(x => x.id === req.params.id); if (!d) return res.status(404).json({ error: 'Introuvable' });
   d.status = req.body.accept ? 'accepted' : 'refused'; save();
   const ok = d.status === 'accepted', dt = fd(d.date);
+  const sm = card(rows([['Prestation', d.service], ['Date', dt], ['Lieu', d.address]]));
   both(d.email, d.phone, ok ? 'Dossier accepté' : 'Date non disponible',
     ok ? `Bonjour ${d.lastName}, bonne nouvelle : nous sommes disponibles le ${dt} et votre dossier est accepté !` : `Bonjour ${d.lastName}, nous ne sommes malheureusement pas disponibles le ${dt}.`,
-    tpl(ok ? 'Dossier accepté ✔' : 'Date non disponible', p(`Bonjour ${E(d.lastName)},`) + (ok ? p(`Bonne nouvelle : nous sommes <b>disponibles le ${E(dt)}</b> et votre dossier <b>${E(d.service)}</b> est accepté. Nous vous contactons pour finaliser les détails.`) : p(`Merci pour votre demande. Nous ne sommes malheureusement <b>pas disponibles le ${E(dt)}</b>.`))));
+    tpl(ok ? 'Dossier accepté' : 'Date non disponible', p(`Bonjour ${E(d.lastName)},`) + (ok ? p(`Bonne nouvelle : nous sommes <b>disponibles le ${E(dt)}</b> et votre dossier <b>${E(d.service)}</b> est accepté. Nous vous contactons très vite pour finaliser les détails.`) : p(`Merci pour votre demande. Nous ne sommes malheureusement <b>pas disponibles le ${E(dt)}</b>. N’hésitez pas à nous proposer une autre date.`)) + sm,
+      { st: ok ? 'accepted' : 'refused', sub: ok ? 'En attente du paiement et de la prestation.' : 'Nous ne pouvons pas assurer cette date.', cta: ok ? 'Voir notre site' : 'Proposer une autre date' }));
   res.json({ ok: 1 });
 });
 
@@ -121,11 +145,12 @@ app.post('/api/admin/pay/:id', adm, async (req, res) => {
   if (!lines.length) return res.status(400).json({ error: 'Aucune ligne' });
   const total = lines.reduce((a, l) => a + l.amount, 0), no = 'R-' + Date.now().toString(36).toUpperCase();
   const pad = (a, b) => a.slice(0, 28).padEnd(30, '.') + b.padStart(10);
-  const ticket = ['=== ' + (D.site.title || 'Sound & Light') + ' ===', 'REÇU N° ' + no, new Date().toLocaleString('fr-FR'), '',
+  const ticket = ['=== ' + (D.site.title || 'Sound & Light 03') + ' ===', 'REÇU N° ' + no, new Date().toLocaleString('fr-FR'), '',
     'Client : ' + d.lastName, 'Prestation : ' + d.service + ' (' + fd(d.date) + ')', '', ...lines.map(l => pad(l.label, l.amount.toFixed(2) + ' €')), '-'.repeat(40), pad('TOTAL PAYÉ', total.toFixed(2) + ' €'), '', 'Merci de votre confiance !'].join('\n');
   d.status = 'paid'; D.finances.push({ id: crypto.randomUUID(), type: 'revenue', name: d.lastName, amount: total, date: new Date().toISOString().slice(0, 10), note: 'Reçu ' + no });
-  save(); const lignes = lines.map(l => `<tr><td style="padding:9px 0;border-bottom:1px solid #eee">${E(l.label)}</td><td align="right" style="padding:9px 0;border-bottom:1px solid #eee">${eur(l.amount)}</td></tr>`).join('');
-  both(d.email, d.phone, 'Votre reçu ' + no, ticket, tpl('Reçu de paiement', p(`Bonjour ${E(d.lastName)}, merci pour votre confiance. Voici votre reçu.`) + rows([['Reçu n°', no], ['Date', new Date().toLocaleDateString('fr-FR')], ['Prestation', d.service + ' — ' + fd(d.date)]]) + `<table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin:10px 0">${lignes}<tr><td style="padding:14px 0;font-weight:bold;font-size:17px">TOTAL PAYÉ</td><td align="right" style="padding:14px 0;font-weight:bold;font-size:17px;color:#b30012">${eur(total)}</td></tr></table>` + p('Ce message fait office de reçu de paiement.'))); res.json({ ok: 1 });
+  save(); const lignes = lines.map(l => `<tr><td style="padding:11px 0;border-bottom:1px dashed #3a3a42;color:#e6e6ea">${E(l.label)}</td><td align="right" style="padding:11px 0;border-bottom:1px dashed #3a3a42;color:#ffffff;font-weight:bold">${eur(l.amount)}</td></tr>`).join('');
+  const ticketHtml = card(rows([['Reçu n°', no], ['Date', new Date().toLocaleDateString('fr-FR')], ['Client', d.lastName], ['Prestation', d.service + ' — ' + fd(d.date)]])) + card(`<table width="100%" cellpadding="0" cellspacing="0" style="margin:6px 0">${lignes}<tr><td style="padding:16px 0 10px;font-weight:bold;font-size:18px;color:#ffffff">TOTAL PAYÉ</td><td align="right" style="padding:16px 0 10px;font-weight:bold;font-size:22px;color:#4ee09a">${eur(total)}</td></tr></table>`);
+  both(d.email, d.phone, 'Votre reçu ' + no, ticket, tpl('Paiement reçu', p(`Bonjour ${E(d.lastName)}, merci pour votre confiance ! Voici le reçu de votre paiement.`) + ticketHtml + p('<span style="color:#a9a9b3;font-size:13px">Ce message fait office de reçu de paiement. Conservez-le.</span>'), { st: 'paid', sub: 'Reçu n° ' + no })); res.json({ ok: 1 });
 });
 
 app.post('/api/admin/finance', adm, (req, res) => {
@@ -136,7 +161,7 @@ app.delete('/api/admin/finance/:id', adm, (req, res) => { D.finances = D.finance
 
 app.post('/api/admin/test-mail', adm, async (_, res) => {
   const to = process.env.ADMIN_EMAIL; if (!to) return res.json({ error: 'ADMIN_EMAIL manquant dans Render' });
-  res.json({ to, error: await mail(to, 'Test du site', 'Si tu lis ce message, les mails fonctionnent ✅', tpl('Test réussi ✅', p('Si tu lis ce message, les mails de ton site fonctionnent.'))) });
+  res.json({ to, error: await mail(to, 'Test du site', 'Si tu lis ce message, les mails fonctionnent ✅', tpl('Test réussi ✅', p('Si tu lis ce message, les mails de ton site fonctionnent.'), { st: 'ok' })) });
 });
 
 (async () => {
