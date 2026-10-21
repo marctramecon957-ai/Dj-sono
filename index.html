@@ -91,8 +91,8 @@ table{width:100%;border-collapse:collapse;font-size:13px}td,th{padding:6px;borde
 <div class="card"><h3>Mails</h3><button class="btn s" onclick="tmail()">Envoyer un mail de test</button><div id="tm"></div></div><div class="card"><h3>Calendrier</h3><p style="font-size:12px">Clique sur un jour : Blanc → Rouge → Bleu → Blanc</p>
 <div class="bar"><button class="btn s" onclick="mv(-1)">◀</button><b id="mt2"></b><button class="btn s" onclick="mv(1)">▶</button></div><div id="ac"></div></div>
 <div class="card"><h3>Infos légales &amp; newsletter</h3>
-<label>Conditions générales</label><textarea id="lgCgv" rows="6"></textarea>
-<label>Mentions légales</label><textarea id="lgMen" rows="6"></textarea>
+<label>Conditions générales</label><textarea id="lgCgv" rows="6" oninput="lgDirty=true"></textarea>
+<label>Mentions légales</label><textarea id="lgMen" rows="6" oninput="lgDirty=true"></textarea>
 <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="lgNotif" style="width:auto"> Prévenir les abonnés newsletter par mail</label>
 <button class="btn" onclick="saveLegal()">Enregistrer</button><div id="lgMsg"></div><small id="lgCount"></small></div>
 <div class="card"><h3>Dossiers</h3><div id="ds" style="overflow:auto"></div></div>
@@ -117,7 +117,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}td,th{padding:6px;borde
 <script>
 const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let T=localStorage.t||'',P={site:{hero:[]},contacts:[],calendar:{}},A={dossiers:[],finances:[]},cur=new Date();
-const api=async(u,m='GET',b)=>{const r=await fetch('/api'+u,{method:m,headers:{'Content-Type':'application/json','x-token':T},body:b?JSON.stringify(b):undefined});const j=await r.json().catch(()=>({}));if(!r.ok)throw j.error||'Erreur';return j};
+const api=async(u,m='GET',b)=>{const r=await fetch('/api'+u,{method:m,headers:{'Content-Type':'application/json','x-token':T},body:b?JSON.stringify(b):undefined});const j=await r.json().catch(()=>({}));if(!r.ok)throw j.error||('Erreur '+r.status);return j};
 const tabs=[['home','Accueil'],['dossier','Déposer un dossier'],['suivi','Suivi de dossier'],['contact','Contact'],['dispo','Disponibilités'],['legal','Infos légales'],['admin','Admin']];
 $('#nav').innerHTML=tabs.map(t=>`<button data-t="${t[0]}" onclick="show('${t[0]}')">${t[1]}</button>`).join('');
 function show(id){document.querySelectorAll('section').forEach(s=>s.classList.toggle('on',s.id==id));document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.t==id))}
@@ -196,9 +196,9 @@ function nlInit(){if(!localStorage.nl){$('#nlPop').style.display='flex'}}
 function nlChoix(){localStorage.nl='non';$('#nlPop').style.display='none'}
 async function nlInscrire(){const email=$('#nlEmail').value.trim();try{const r=await fetch('/api/newsletter',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email})});const j=await r.json();if(!r.ok)throw j.error||'Erreur';localStorage.nl='oui';$('#nlMsg').innerHTML='<div class="msg ok">Merci, vous êtes inscrit !</div>';setTimeout(()=>$('#nlPop').style.display='none',1200)}catch(x){$('#nlMsg').innerHTML=`<div class="msg ko">${esc(x)}</div>`}}
 if(!localStorage.cookies)$('#cookiePop').style.display='block';else nlInit();
-async function loadLegal(){try{const r=await api('/admin/legal');$('#lgCgv').value=r.legal.cgv||'';$('#lgMen').value=r.legal.mentions||'';$('#lgCount').textContent=r.abonnes+' abonné(s) à la newsletter'}catch{}}
-async function saveLegal(){try{const r=await api('/admin/legal','PUT',{cgv:$('#lgCgv').value,mentions:$('#lgMen').value,notifier:$('#lgNotif').checked});$('#lgMsg').innerHTML='<div class="msg ok">Enregistré'+(r.notifies?' — '+r.notifies+' abonné(s) prévenu(s)':'')+'</div>';await load()}catch(x){$('#lgMsg').innerHTML=`<div class="msg ko">${esc(x)}</div>`}}
+let lgDirty=false;async function loadLegal(){if(lgDirty)return;try{const r=await api('/admin/legal');$('#lgCgv').value=r.legal.cgv||'';$('#lgMen').value=r.legal.mentions||'';$('#lgCount').textContent=r.abonnes+' abonné(s) à la newsletter'}catch{}}
+async function saveLegal(){try{lgDirty=false;const r=await api('/admin/legal','PUT',{cgv:$('#lgCgv').value,mentions:$('#lgMen').value,notifier:$('#lgNotif').checked});$('#lgMsg').innerHTML='<div class="msg ok">Enregistré'+(r.notifies?' — '+r.notifies+' abonné(s) prévenu(s)':'')+'</div>';await load()}catch(x){lgDirty=true;$('#lgMsg').innerHTML=`<div class="msg ko">${/404/.test(x)?'Le serveur n’est pas à jour : renvoie server.js sur GitHub puis attends la fin du déploiement Render.':esc(x)}</div>`}}
 
-setInterval(async()=>{if(document.hidden)return;try{const p=await(await fetch('/api/public',{cache:'no-store'})).json();if(JSON.stringify(p)!==JSON.stringify(P)){P=p;render()}if(T&&$('#panel').style.display=='block'){A=await api('/admin/all');drawA()}}catch{}},15000);
+setInterval(async()=>{if(document.hidden)return;try{const p=await(await fetch('/api/public',{cache:'no-store'})).json();if(JSON.stringify(p)!==JSON.stringify(P)){P=p;render();legalRender()}if(T&&$('#panel').style.display=='block'){A=await api('/admin/all');drawA()}}catch{}},15000);
 show('home');load().then(()=>{if(T)openAdmin()});
 </script></body></html>
