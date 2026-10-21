@@ -1,5 +1,5 @@
 const express = require('express'), fs = require('fs'), crypto = require('crypto'), nodemailer = require('nodemailer');
-console.log('Démarrage… [build suivi-dossier v3]');
+console.log('Démarrage… [build legal-newsletter v4]');
 process.on('uncaughtException', e => console.error('ERREUR FATALE', e));
 process.on('unhandledRejection', e => console.error('ERREUR PROMESSE', e));
 const app = express();
@@ -10,10 +10,15 @@ app.use(express.json());
 app.use('/api', (_, res, next) => { res.set('Cache-Control', 'no-store'); next(); });
 const IDX = [path.join(__dirname, 'public', 'index.html'), path.join(__dirname, 'index.html')].find(p => fs.existsSync(p));
 app.get('/', (_, res) => res.set('Cache-Control', 'no-store').sendFile(IDX));
-app.get('/api/version', (_, res) => res.json({ build: 'suivi-dossier v3' }));
+app.get('/api/version', (_, res) => res.json({ build: 'legal-newsletter v4' }));
 
 const FILE = process.env.DATA_FILE || 'data.json';
-let D = { site: { title: 'Sound & Light 03', hero: [] }, contacts: [], calendar: {}, dossiers: [], finances: [] };
+let D = { site: { title: 'Sound & Light 03', hero: [] }, contacts: [], calendar: {}, dossiers: [], finances: [],
+  legal: {
+    mentions: 'Éditeur du site : Sound & Light 03 Sonorisation, entreprise individuelle (auto-entrepreneur).\nResponsable : Nathan Peurton.\nAdresse : 8 Rue Simone Léveillé.\nTéléphone : 06 59 84 39 52 — E-mail : soundlight03@gmail.com\nSIRET : en cours d’attribution.\nHébergement : Render Services, Inc., San Francisco, États-Unis.\nDonnées personnelles : les informations saisies dans les formulaires servent uniquement au traitement de votre demande. Vous pouvez demander leur suppression à tout moment par e-mail. L’inscription à la newsletter est facultative et la désinscription possible sur simple demande.\nCookies : le site n’utilise que des cookies techniques nécessaires à son fonctionnement.',
+    cgv: 'Article 1 — Objet : les présentes conditions encadrent les prestations de sonorisation, DJ, éclairage et artifices proposées par Sound & Light 03 Sonorisation.\nArticle 2 — Devis et dossier : tout dossier déposé sur le site est une demande, qui n’est ferme qu’après acceptation par le prestataire.\nArticle 3 — Disponibilité : la prestation est soumise à la disponibilité de la date demandée.\nArticle 4 — Prix et paiement : le prix est celui convenu entre les parties. Le paiement peut être demandé en acompte puis en solde, selon l’accord conclu.\nArticle 5 — Annulation et remboursement : une demande de remboursement peut être faite depuis l’espace de suivi du dossier et est étudiée au cas par cas.\nArticle 6 — Responsabilité : le client fournit un lieu et une alimentation électrique adaptés, et respecte les règles de sécurité en vigueur, notamment pour les artifices.\nArticle 7 — Données personnelles : voir les mentions légales.\nArticle 8 — Droit applicable : droit français.',
+    updated: null },
+  newsletter: [] };
 try { D = { ...D, ...JSON.parse(fs.readFileSync(FILE)) }; } catch {}
 // Sauvegarde durable : Upstash Redis (gratuit, HTTPS) si configuré, sinon fichier local
 const UP = process.env.UPSTASH_URL, UT = process.env.UPSTASH_TOKEN;
@@ -121,7 +126,20 @@ app.post('/api/suivi/remboursement', async (req, res) => {
 
 // ---- Public ----
 const svc = () => ({ DJ: true, Artificier: true, Lighter: true, ...(D.site.services || {}) });
-app.get('/api/public', (_, res) => res.json({ site: { ...D.site, services: svc() }, contacts: D.contacts, calendar: D.calendar, upload: { cloud: process.env.CLOUDINARY_CLOUD || '', preset: process.env.CLOUDINARY_PRESET || '' } }));
+app.get('/api/public', (_, res) => res.json({ site: { ...D.site, services: svc() }, contacts: D.contacts, calendar: D.calendar, legal: D.legal, upload: { cloud: process.env.CLOUDINARY_CLOUD || '', preset: process.env.CLOUDINARY_PRESET || '' } }));
+
+// ---- Newsletter ----
+app.post('/api/newsletter', (req, res) => {
+  const email = String(req.body.email || '').trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ error: 'E-mail invalide' });
+  if (!D.newsletter.includes(email)) { D.newsletter.push(email); save(); }
+  res.json({ ok: 1 });
+});
+app.post('/api/newsletter/desinscription', (req, res) => {
+  const email = String(req.body.email || '').trim().toLowerCase();
+  D.newsletter = D.newsletter.filter(e => e !== email); save();
+  res.json({ ok: 1 });
+});
 
 app.post('/api/dossier', async (req, res) => {
   const b = req.body, s = String;
@@ -154,6 +172,20 @@ app.put('/api/admin/site', adm, (req, res) => { const sv = req.body.services || 
     services: { DJ: sv.DJ !== false, Artificier: sv.Artificier !== false, Lighter: sv.Lighter !== false } }; save(); res.json({ ok: 1 }); });
 app.put('/api/admin/contacts', adm, (req, res) => { D.contacts = req.body.map(c => ({ name: String(c.name), role: String(c.role || ''), phone: String(c.phone || ''), email: String(c.email || ''), photo: String(c.photo || '') })); save(); res.json({ ok: 1 }); });
 app.put('/api/admin/calendar', adm, (req, res) => { D.calendar = req.body; save(); res.json({ ok: 1 }); });
+
+// ---- Admin : conditions générales & mentions légales (envoi newsletter à la mise à jour) ----
+app.get('/api/admin/legal', adm, (_, res) => res.json({ legal: D.legal, abonnes: D.newsletter.length }));
+app.put('/api/admin/legal', adm, async (req, res) => {
+  D.legal = { cgv: String(req.body.cgv || '').slice(0, 20000), mentions: String(req.body.mentions || '').slice(0, 20000), updated: new Date().toISOString() };
+  save();
+  if (req.body.notifier && D.newsletter.length) {
+    const site = process.env.SITE_URL || '';
+    const html = tpl('Mise à jour de nos conditions', p('Nos conditions générales et/ou nos mentions légales viennent d’être mises à jour.') + p('Nous vous invitons à en prendre connaissance sur notre site.'), { st: 'admin', sub: 'Merci de votre confiance.', cta: site ? 'Consulter le site' : undefined, ctaUrl: site || undefined });
+    const text = 'Nos conditions générales et/ou nos mentions légales viennent d’être mises à jour. Consultez-les sur notre site.' + (site ? '\n' + site : '');
+    for (const email of D.newsletter) { mail(email, 'Mise à jour de nos conditions', text, html).catch(() => {}); }
+  }
+  res.json({ ok: 1, notifies: req.body.notifier ? D.newsletter.length : 0 });
+});
 
 app.post('/api/admin/decision/:id', adm, async (req, res) => {
   const d = D.dossiers.find(x => x.id === req.params.id); if (!d) return res.status(404).json({ error: 'Introuvable' });
