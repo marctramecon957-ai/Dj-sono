@@ -1,5 +1,5 @@
 const express = require('express'), fs = require('fs'), crypto = require('crypto'), nodemailer = require('nodemailer');
-console.log('Démarrage… [build legal-newsletter v5]');
+console.log('Démarrage… [build legal-newsletter v6]');
 process.on('uncaughtException', e => console.error('ERREUR FATALE', e));
 process.on('unhandledRejection', e => console.error('ERREUR PROMESSE', e));
 const app = express();
@@ -10,7 +10,7 @@ app.use(express.json());
 app.use('/api', (_, res, next) => { res.set('Cache-Control', 'no-store'); next(); });
 const IDX = [path.join(__dirname, 'public', 'index.html'), path.join(__dirname, 'index.html')].find(p => fs.existsSync(p));
 app.get('/', (_, res) => res.set('Cache-Control', 'no-store').sendFile(IDX));
-app.get('/api/version', (_, res) => res.json({ build: 'legal-newsletter v5' }));
+app.get('/api/version', (_, res) => res.json({ build: 'legal-newsletter v6' }));
 
 const FILE = process.env.DATA_FILE || 'data.json';
 let D = { site: { title: 'Sound & Light 03', hero: [] }, contacts: [], calendar: {}, dossiers: [], finances: [],
@@ -22,7 +22,7 @@ let D = { site: { title: 'Sound & Light 03', hero: [] }, contacts: [], calendar:
 try { D = { ...D, ...JSON.parse(fs.readFileSync(FILE)) }; } catch {}
 // Sauvegarde durable : Upstash Redis (gratuit, HTTPS) si configuré, sinon fichier local
 const UP = process.env.UPSTASH_URL, UT = process.env.UPSTASH_TOKEN;
-const up = body => fetch(UP, { method: 'POST', headers: { Authorization: 'Bearer ' + UT }, body: JSON.stringify(body) }).then(r => r.json());
+const up = body => fetch(UP, { method: 'POST', headers: { Authorization: 'Bearer ' + UT }, body: JSON.stringify(body) }).then(r => r.json()).then(j => { if (j.error) throw new Error(j.error); return j; });
 let timer, ready = !UP;
 const save = () => {
   try { fs.writeFileSync(FILE, JSON.stringify(D, null, 1)); } catch {}
@@ -180,13 +180,16 @@ app.get('/api/admin/legal', adm, (_, res) => res.json({ legal: D.legal, abonnes:
 app.put('/api/admin/legal', adm, async (req, res) => {
   D.legal = { cgv: String(req.body.cgv || '').slice(0, 20000), mentions: String(req.body.mentions || '').slice(0, 20000), updated: new Date().toISOString() };
   save();
+  let warn = '';
+  if (!UP) warn = 'Upstash n’est pas configuré (UPSTASH_URL / UPSTASH_TOKEN) : ces textes seront perdus au prochain déploiement.';
+  else { try { await up(['SET', 'djdata', JSON.stringify(D)]); } catch (e) { warn = 'Sauvegarde durable impossible (Upstash) : ' + e.message; console.error('ERREUR UPSTASH', e.message); } }
   if (req.body.notifier && D.newsletter.length) {
     const site = process.env.SITE_URL || '';
     const html = tpl('Mise à jour de nos conditions', p('Nos conditions générales et/ou nos mentions légales viennent d’être mises à jour.') + p('Nous vous invitons à en prendre connaissance sur notre site.'), { st: 'admin', sub: 'Merci de votre confiance.', cta: site ? 'Consulter le site' : undefined, ctaUrl: site || undefined });
     const text = 'Nos conditions générales et/ou nos mentions légales viennent d’être mises à jour. Consultez-les sur notre site.' + (site ? '\n' + site : '');
     for (const email of D.newsletter) { mail(email, 'Mise à jour de nos conditions', text, html).catch(() => {}); }
   }
-  res.json({ ok: 1, notifies: req.body.notifier ? D.newsletter.length : 0 });
+  res.json({ ok: 1, warn, notifies: req.body.notifier ? D.newsletter.length : 0 });
 });
 
 app.post('/api/admin/decision/:id', adm, async (req, res) => {
