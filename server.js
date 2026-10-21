@@ -1,5 +1,5 @@
 const express = require('express'), fs = require('fs'), crypto = require('crypto'), nodemailer = require('nodemailer');
-console.log('Démarrage… [build legal-newsletter v4]');
+console.log('Démarrage… [build legal-newsletter v5]');
 process.on('uncaughtException', e => console.error('ERREUR FATALE', e));
 process.on('unhandledRejection', e => console.error('ERREUR PROMESSE', e));
 const app = express();
@@ -10,7 +10,7 @@ app.use(express.json());
 app.use('/api', (_, res, next) => { res.set('Cache-Control', 'no-store'); next(); });
 const IDX = [path.join(__dirname, 'public', 'index.html'), path.join(__dirname, 'index.html')].find(p => fs.existsSync(p));
 app.get('/', (_, res) => res.set('Cache-Control', 'no-store').sendFile(IDX));
-app.get('/api/version', (_, res) => res.json({ build: 'legal-newsletter v4' }));
+app.get('/api/version', (_, res) => res.json({ build: 'legal-newsletter v5' }));
 
 const FILE = process.env.DATA_FILE || 'data.json';
 let D = { site: { title: 'Sound & Light 03', hero: [] }, contacts: [], calendar: {}, dossiers: [], finances: [],
@@ -90,11 +90,13 @@ const tpl = (title, inner, o = {}) => {
 const both = (m, ph, sub, txt, html) => { Promise.all([m && mail(m, sub, txt, html), ph && sms(ph, txt.slice(0, 300))]).catch(() => {}); };
 
 // ---- Auth admin ----
-const tokens = new Set();
-const adm = (req, res, next) => tokens.has(req.headers['x-token']) ? next() : res.status(401).json({ error: 'Non autorisé' });
+const sign = exp => crypto.createHmac('sha256', process.env.ADMIN_PASSWORD || '').update(String(exp)).digest('hex');
+const okTok = t => { const [exp, sig] = String(t || '').split('.'); if (!exp || !sig || +exp < Date.now() || !process.env.ADMIN_PASSWORD) return false;
+  const a = Buffer.from(sig), b = Buffer.from(sign(exp)); return a.length === b.length && crypto.timingSafeEqual(a, b); };
+const adm = (req, res, next) => okTok(req.headers['x-token']) ? next() : res.status(401).json({ error: 'Non autorisé' });
 app.post('/api/login', (req, res) => {
   if (!process.env.ADMIN_PASSWORD || req.body.password !== process.env.ADMIN_PASSWORD) return res.status(401).json({ error: 'Mot de passe incorrect' });
-  const t = crypto.randomBytes(24).toString('hex'); tokens.add(t); res.json({ token: t });
+  const exp = Date.now() + 14 * 864e5; res.json({ token: exp + '.' + sign(exp) });
 });
 
 // ---- Suivi de dossier (code unique client) ----
