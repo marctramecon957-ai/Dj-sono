@@ -117,7 +117,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}td,th{padding:6px;borde
 <script>
 const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let T=localStorage.t||'',P={site:{hero:[]},contacts:[],calendar:{}},A={dossiers:[],finances:[]},cur=new Date();
-const api=async(u,m='GET',b)=>{const r=await fetch('/api'+u,{method:m,headers:{'Content-Type':'application/json','x-token':T},body:b?JSON.stringify(b):undefined});const j=await r.json().catch(()=>({}));if(!r.ok)throw j.error||('Erreur '+r.status);return j};
+const api=async(u,m='GET',b)=>{const r=await fetch('/api'+u,{method:m,headers:{'Content-Type':'application/json','x-token':T},body:b?JSON.stringify(b):undefined});const j=await r.json().catch(()=>({}));if(r.status==401&&u!='/login'){localStorage.t='';setTimeout(()=>location.reload(),1500);throw 'Session expirée, reconnexion…'}if(!r.ok)throw j.error||('Erreur '+r.status);return j};
 const tabs=[['home','Accueil'],['dossier','Déposer un dossier'],['suivi','Suivi de dossier'],['contact','Contact'],['dispo','Disponibilités'],['legal','Infos légales'],['admin','Admin']];
 $('#nav').innerHTML=tabs.map(t=>`<button data-t="${t[0]}" onclick="show('${t[0]}')">${t[1]}</button>`).join('');
 function show(id){document.querySelectorAll('section').forEach(s=>s.classList.toggle('on',s.id==id));document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.t==id))}
