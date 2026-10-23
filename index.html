@@ -103,10 +103,9 @@ table{width:100%;border-collapse:collapse;font-size:13px}td,th{padding:6px;borde
 <label>Note</label><input name="note"><button class="btn">Ajouter</button></form>
 <div class="row"><div><label>Mois</label><input type="month" id="fm"></div><div><label>Année</label><input type="number" id="fy"></div></div>
 <div id="tot"></div><div style="overflow:auto"><table id="ft"></table></div></div>
+<button class="btn" onclick="localStorage.t='';location.reload()">Déconnexion</button></div></section>
 <section id="legal"><div class="card"><h2>Informations légales</h2>
 <div id="legalView"></div></div></section>
-
-<button class="btn" onclick="localStorage.t='';location.reload()">Déconnexion</button></div></section>
 </main>
 <div id="pm" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:50;overflow:auto"><div class="card" style="max-width:560px;margin:30px auto">
 <h3 id="pm_t"></h3><p style="font-size:13px;color:#ccc;margin:4px 0 10px">1) Coche ce que le client a payé et mets le montant. 2) Ajoute une autre ligne si besoin. 3) Envoie le reçu.</p>
