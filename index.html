@@ -1,5 +1,8 @@
 <!DOCTYPE html>
-<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#050507"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Sound & Light">
+<link rel="manifest" href="/manifest.webmanifest"><link rel="icon" href="/icon-192.png"><link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <title>Sound &amp; Light 03</title>
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;600&display=swap" rel="stylesheet">
 <style>
@@ -36,8 +39,45 @@ table{width:100%;border-collapse:collapse;font-size:13px}td,th{padding:6px;borde
 .pr{display:flex;gap:8px;align-items:center;margin:6px 0}.pr input[type=checkbox]{width:22px;height:22px;flex:none}
 #abt p{line-height:1.7;margin:8px 0;font-size:16px;color:#e8e8ee}#abt h2{font-size:clamp(22px,4.5vw,34px);color:var(--pink);margin:0 0 6px}
 .tag{padding:2px 8px;border-radius:10px;background:#4a1520;font-size:11px}.leg span{margin-right:12px;font-size:12px}
+
+html{-webkit-text-size-adjust:100%}body{min-height:100vh;min-height:100dvh;-webkit-tap-highlight-color:transparent}
+header{padding-top:calc(26px + env(safe-area-inset-top))}main{padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env(safe-area-inset-right))}
+.ld{width:min(260px,70vw);height:9px;border:2px solid var(--pink);border-radius:2px;transform:skew(-18deg);background:rgba(0,0,0,.6);overflow:hidden;box-shadow:0 0 16px rgba(255,30,45,.55);margin:18px auto 0}
+.ld i{display:block;height:100%;width:0;background:linear-gradient(90deg,#ff1e2d,#ff8a92,#ff1e2d);background-size:200% 100%;box-shadow:0 0 12px #ff1e2d;transition:width .35s ease;animation:flow 1s linear infinite}
+.ld.fill i{animation:fillup 1.6s cubic-bezier(.2,.7,.2,1) forwards,flow 1s linear infinite}.ld.ind i{width:38%;animation:slide 1.1s ease-in-out infinite alternate,flow 1s linear infinite}
+@keyframes fillup{to{width:90%}}@keyframes flow{to{background-position:-200% 0}}@keyframes slide{from{margin-left:0}to{margin-left:62%}}
+#splash,#mnt{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;background:radial-gradient(ellipse at 50% 0,#4a0710,transparent 65%),radial-gradient(ellipse at 50% 100%,#2a0308,transparent 60%),#050507;transition:opacity .45s}
+#mnt{z-index:10000;display:none}#splash.out{opacity:0;pointer-events:none}
+#splash img,#mnt img{width:112px;height:112px;border-radius:26px;box-shadow:0 0 40px rgba(255,30,45,.55);animation:pop .8s ease both}
+#splash h1,#mnt h2{margin:18px 0 0;font-size:clamp(26px,7vw,44px);font-style:italic;transform:skew(-8deg);text-shadow:0 4px 22px rgba(255,30,45,.65)}
+#mnt p{color:#cdb3b7;max-width:420px;margin:10px 0 0;line-height:1.6}#mtE{margin-top:16px;font-weight:600;color:var(--yel)}#mtA{margin-top:26px;color:var(--cyan);font-size:13px;cursor:pointer;text-decoration:underline}
+@keyframes pop{from{transform:scale(.6);opacity:0}to{transform:scale(1);opacity:1}}
+#mtB{display:none;background:#7a1020;text-align:center;font-size:13px;padding:6px;position:relative;z-index:2}
+.inst{margin:12px auto 0;display:none}
+#im{position:fixed;inset:0;z-index:9998;background:rgba(0,0,0,.75);display:none;align-items:center;justify-content:center;padding:16px}#im .card{max-width:420px}
+.trk{display:flex;margin:22px 0 10px}.trk .s{flex:1;text-align:center;min-width:0}.trk .l{display:flex;align-items:center}
+.trk .b{flex:1;height:5px;background:#3a2227;overflow:hidden}.trk .b.x{visibility:hidden}.trk .b i{display:block;height:100%;width:0;background:linear-gradient(90deg,#ff1e2d,#ff6b76);box-shadow:0 0 10px #ff1e2d;transition:width .35s linear;position:relative}
+.trk .b.on i{width:100%}.trk .b.run i::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.65),transparent);animation:shine 1.4s linear infinite}
+@keyframes shine{from{transform:translateX(-100%)}to{transform:translateX(100%)}}
+.trk .c{width:36px;height:36px;border-radius:50%;border:3px solid #4a2a30;background:#0b0507;display:grid;place-items:center;font-weight:700;font-size:14px;flex:none;transform:scale(.4);opacity:0;transition:transform .45s cubic-bezier(.3,1.6,.5,1),opacity .3s}
+.trk .c.show{transform:scale(1);opacity:1}.trk .c.done{background:#ff1e2d;border-color:#ff1e2d;box-shadow:0 0 16px rgba(255,30,45,.75)}
+.trk .c.cur{background:#e8a317;border-color:#e8a317;color:#1a1200;animation:pulse 1.6s infinite}.trk .c.fail{background:#7a0b13;border-color:#ff1e2d}.trk .c.fail.show{animation:shake .5s}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(232,163,23,.75)}100%{box-shadow:0 0 0 16px rgba(232,163,23,0)}}
+@keyframes shake{20%,60%{transform:translateX(-5px)}40%,80%{transform:translateX(5px)}}
+.trk .t{font-size:12px;margin-top:8px;color:#7d676b;transition:color .4s}.trk .t.hi{color:#fff}.trk .t.bad{color:#ff6b76}
+.stat{border:1px solid #5a1520;border-left:5px solid var(--pink);border-radius:10px;padding:14px;margin:16px 0;background:#0b0507;animation:up .6s .2s both}.stat b{font-size:17px}.stat p{margin:6px 0 0;color:#cdb3b7;font-size:14px}
+.stat.s-accepted,.stat.s-paid,.stat.s-refunded{border-left-color:#2bb673}.stat.s-pending,.stat.s-refund_requested{border-left-color:#e8a317}
+@keyframes up{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+@media (max-width:640px){.row{grid-template-columns:1fr}main{padding-top:6px;padding-bottom:calc(80px + env(safe-area-inset-bottom))}nav{gap:6px;padding:10px 8px}nav button{padding:10px 12px;font-size:13px;min-height:44px}
+.btn{min-height:44px}.btn.s{min-height:36px}input,select,textarea{font-size:16px}.card{padding:14px}.grid img,.grid video{height:180px}.ct img{width:64px;height:64px}#ds,#ft{overflow-x:auto;display:block}.trk .c{width:30px;height:30px;font-size:12px}.trk .t{font-size:11px}#cookiePop{padding-bottom:calc(16px + env(safe-area-inset-bottom))!important}}
+@media (min-width:1100px){main{max-width:1100px}.grid{grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
 </style></head><body>
-<div class="beams"><i></i><i></i><i></i><i></i><i></i></div><header><h1 id="ttl" class="logo">Sound &amp; Light 03</h1><div class="sub">SONORISATION</div></header>
+<div id="splash"><img src="/icon-192.png" alt=""><h1 class="fest" style="color:#fff">Sound &amp; Light 03</h1><div class="sub">SONORISATION</div><div class="ld fill" id="spL"><i id="spB"></i></div></div>
+<div id="mnt"><img src="/icon-192.png" alt=""><h2 id="mtT">Maintenance en cours</h2><p id="mtP"></p><div class="ld ind"><i></i></div><div id="mtE"></div><a id="mtA" onclick="mtBypass()">Accès administrateur</a></div>
+<div id="im"><div class="card"><h2>Installer l'application</h2><p id="imT" style="line-height:1.6"></p><button class="btn" onclick="$('#im').style.display='none'">Compris</button></div></div>
+<div id="mtB">Mode maintenance actif : les visiteurs voient la page de maintenance.</div>
+<div class="beams"><i></i><i></i><i></i><i></i><i></i></div><header><h1 id="ttl" class="logo">Sound &amp; Light 03</h1><div class="sub">SONORISATION</div><br><button class="btn s inst" id="inst" onclick="installApp()">⬇ Installer l'application</button></header>
 <div id="cookiePop" style="display:none;position:fixed;left:0;right:0;bottom:0;z-index:999;background:#131316;border-top:2px solid #ff1e2d;padding:16px 20px;box-shadow:0 -4px 20px rgba(0,0,0,.5)">
 <div style="max-width:760px;margin:0 auto;display:flex;gap:16px;flex-wrap:wrap;align-items:center;justify-content:space-between">
 <div style="flex:1;min-width:220px;font-size:14px;color:#e6e6ea">Ce site utilise des cookies techniques nécessaires à son fonctionnement.</div>
@@ -90,6 +130,13 @@ table{width:100%;border-collapse:collapse;font-size:13px}td,th{padding:6px;borde
 <div class="card"><h3>Contacts</h3><label>1 ligne par personne : Nom | Rôle | Téléphone | Email | Lien photo</label><textarea id="a_c"></textarea><label>📁 Importer une photo : clique dans la ligne de la personne, après le dernier « | », puis choisis le fichier</label><input type="file" id="up_c" accept="image/*" onchange="upl(this,'a_c')"><div id="upm2"></div><button class="btn s" onclick="saveC()">Enregistrer</button></div>
 <div class="card"><h3>Mails</h3><button class="btn s" onclick="tmail()">Envoyer un mail de test</button><div id="tm"></div></div><div class="card"><h3>Calendrier</h3><p style="font-size:12px">Clique sur un jour : Blanc → Rouge → Bleu → Blanc</p>
 <div class="bar"><button class="btn s" onclick="mv(-1)">◀</button><b id="mt2"></b><button class="btn s" onclick="mv(1)">▶</button></div><div id="ac"></div></div>
+<div class="card"><h3>Maintenance &amp; mises à jour</h3>
+<p id="mtS" style="font-size:13px;color:var(--cyan)"></p>
+<label>Message affiché aux visiteurs</label><input id="mtMsg" placeholder="Ex. Nous améliorons le site, retour très vite">
+<label>Durée estimée (minutes)</label><input id="mtMin" type="number" min="1" value="15">
+<button class="btn" onclick="setMaint(true)">Activer la maintenance</button><button class="btn" style="background:#333" onclick="setMaint(false)">Remettre le site en ligne</button>
+<hr style="border:0;border-top:1px solid #4a1520;margin:16px 0"><p style="font-size:13px;color:#cdb3b7;line-height:1.6">Après avoir envoyé tes fichiers sur GitHub, clique ici : le site affiche la page de mise à jour avec la durée estimée, puis se recharge tout seul quand c'est fini.</p>
+<button class="btn" onclick="deploySite()">⟳ Mettre à jour le site</button><div id="mtR"></div></div>
 <div class="card"><h3>Infos légales &amp; newsletter</h3>
 <label>Conditions générales</label><textarea id="lgCgv" rows="6" oninput="lgDirty=true"></textarea>
 <label>Mentions légales</label><textarea id="lgMen" rows="6" oninput="lgDirty=true"></textarea>
@@ -138,21 +185,25 @@ $('#cts').innerHTML=P.contacts.map(c=>`<div class="card ct">${c.photo?`<img src=
 $('#fd').onchange=e=>{const s=P.calendar[e.target.value];$('#dmsg').innerHTML=s?`<div class="msg ko">🔴 ${s=='busy'?'Non disponible':'Non disponible (en vacances)'} à cette date</div>`:e.target.value?'<div class="msg ok">Date disponible ✅</div>':''};
 async function sendD(e){e.preventDefault();const b=Object.fromEntries(new FormData(e.target));try{const r=await api('/dossier','POST',b);
 $('#res').innerHTML=r.status=='refused'?'<div class="msg ko">Date non disponible. Un message vous a été envoyé.</div>':'<div class="msg ok">Dossier envoyé ! Vous allez recevoir un mail et un SMS.</div>';e.target.reset();$('#dmsg').innerHTML=''}catch(x){$('#res').innerHTML=`<div class="msg ko">${esc(x)}</div>`}return false}
-const STL={pending:['⏳ En attente','#f5a623'],accepted:['✔ Accepté — en attente de paiement','#2bb673'],refused:['✕ Refusé','#e5384a'],paid:['€ Payé','#2bb673'],refund_requested:['↺ Remboursement demandé','#f5a623'],refunded:['↺ Remboursé','#2bb673']};
-let curCode='';
-async function chargerSuivi(){const c=$('#trackCode').value.trim().toUpperCase();if(!c)return;
+const STEPS=['Dossier reçu','Validation','Accepté','Payé'],STM={pending:{d:1,c:1},accepted:{d:3,c:3},paid:{d:4},refused:{d:1,f:1},refund_requested:{d:4},refunded:{d:4}};
+const STX={pending:['En attente de validation','Nous vérifions notre disponibilité et revenons vers vous très vite.'],accepted:['Dossier accepté','Bonne nouvelle ! Vous pouvez régler en ligne pour confirmer.'],refused:['Date non disponible','Nous ne pouvons pas assurer cette date. Vous pouvez proposer une autre date.'],paid:['Paiement reçu','Merci pour votre confiance, tout est en ordre.'],refund_requested:['Remboursement demandé','Votre demande est bien envoyée, nous revenons vers vous rapidement.'],refunded:['Remboursé','Votre remboursement a été effectué.']};
+let curCode='',curSt=null,suiviTimer=null;
+if(localStorage.code)setTimeout(()=>{const e=$('#trackCode');if(e)e.value=localStorage.code},0);
+async function chargerSuivi(silent){const c=(curCode||$('#trackCode').value).trim().toUpperCase();if(!c)return;
 try{const r=await fetch('/api/suivi',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code:c})});const j=await r.json();if(!r.ok)throw j.error||'Erreur';
-curCode=c;afficherSuivi(j.dossier)}catch(x){$('#suiviMsg').innerHTML=`<div class="msg ko">${esc(x)}</div>`}}
+curCode=c;localStorage.code=c;if(!silent||j.dossier.status!==curSt){curSt=j.dossier.status;afficherSuivi(j.dossier)}
+clearInterval(suiviTimer);suiviTimer=setInterval(()=>chargerSuivi(true),8000)}catch(x){if(!silent)$('#suiviMsg').innerHTML=`<div class="msg ko">${esc(x)}</div>`}}
+function autreSuivi(){clearInterval(suiviTimer);curCode='';curSt=null;$('#suiviInfo').style.display='none';$('#suiviLogin').style.display='block';$('#trackCode').value='';$('#suiviMsg').innerHTML=''}
 function afficherSuivi(d){$('#suiviLogin').style.display='none';const si=$('#suiviInfo');si.style.display='block';
-const st=STL[d.status]||['',''];
-let actions='';
-if(d.status=='accepted')actions+=`<button class="btn" onclick="payerSuivi()">Payer mon dossier</button>`;
-if(d.status=='paid')actions+=`<button class="btn s" onclick="demanderRemb()">Demander un remboursement</button>`;
-si.innerHTML=`<p><b>${esc(d.service)}</b> — ${esc(d.lastName)}<br>Date : ${esc(d.date)}</p>
-<p style="color:${st[1]};font-weight:bold">${st[0]}</p>
-${d.total?`<p>Montant : ${d.total} €</p>`:''}
-<div id="suiviActions">${actions}</div><div id="suiviActMsg"></div>
-<button class="btn s" onclick="location.reload()">Suivre un autre dossier</button>`}
+const m=STM[d.status]||{d:0},tx=STX[d.status]||['',''],G=900,col=[];
+for(let k=0;k<4;k++){const done=k<m.d&&m.f!==k,cur=k===m.c,fail=m.f===k;
+const lOn=k>0&&(k-1<m.d&&m.f!==k-1),rOn=k<3&&(k<m.d&&m.f!==k);
+col.push(`<div class="s"><div class="l"><div class="b${lOn?' on':''}${lOn&&cur?' run':''}${k==0?' x':''}" data-on="${lOn?1:0}"><i style="transition-delay:${(k-1)*G+520}ms"></i></div><div class="c ${done?'done':cur?'cur':fail?'fail':''}" style="transition-delay:${k*G}ms${cur?`;animation-delay:${k*G+450}ms`:''}">${fail?'✕':done?'✓':k+1}</div><div class="b${rOn?' on':''}${k==3?' x':''}" data-on="${rOn?1:0}"><i style="transition-delay:${k*G+260}ms"></i></div></div><div class="t ${fail?'bad':(done||cur)?'hi':''}">${fail?'Refusé':STEPS[k]}</div></div>`)}
+let actions='';if(d.status=='accepted')actions=`<button class="btn" onclick="payerSuivi()">Payer mon dossier</button>`;if(d.status=='paid')actions=`<button class="btn s" onclick="demanderRemb()">Demander un remboursement</button>`;
+si.innerHTML=`<p style="margin:0 0 4px"><b>${esc(d.service)}</b> — ${esc(d.lastName)}<br><span style="color:#cdb3b7">Date : ${esc(d.date)}</span></p><div class="trk">${col.join('')}</div>
+<div class="stat s-${esc(d.status)}"><b>${tx[0]}</b><p>${tx[1]}</p>${d.total?`<p>Montant : <b>${d.total} €</b></p>`:''}</div>
+<div id="suiviActions">${actions}</div><div id="suiviActMsg"></div><button class="btn s" style="background:#333" onclick="autreSuivi()">Suivre un autre dossier</button>`;
+requestAnimationFrame(()=>requestAnimationFrame(()=>{si.querySelectorAll('.c').forEach(e=>e.classList.add('show'));si.querySelectorAll('.b').forEach(e=>{if(e.dataset.on==='1')e.classList.add('on')})}))}
 async function payerSuivi(){try{const r=await fetch('/api/suivi/paiement',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code:curCode})});const j=await r.json();if(!r.ok)throw j.error||'Erreur';chargerSuivi()}catch(x){$('#suiviActMsg').innerHTML=`<div class="msg ko">${esc(x)}</div>`}}
 async function demanderRemb(){const reason=prompt('Expliquez brièvement la raison de votre demande de remboursement :')||'';try{const r=await fetch('/api/suivi/remboursement',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code:curCode,reason})});const j=await r.json();if(!r.ok)throw j.error||'Erreur';chargerSuivi()}catch(x){$('#suiviActMsg').innerHTML=`<div class="msg ko">${esc(x)}</div>`}}
 
@@ -185,7 +236,7 @@ async function psend(){const miss=PRE.filter((n,i)=>$('#c'+i).checked&&!(parseFl
 const lines=plines();if(!lines.length){alert('Coche au moins une prestation et mets un montant');return}try{await api('/admin/pay/'+PID,'POST',{lines});$('#pm').style.display='none';await refresh()}catch(x){alert(x)}}
 async function addF(e){e.preventDefault();await api('/admin/finance','POST',Object.fromEntries(new FormData(e.target)));e.target.reset();await refresh();return false}
 async function delF(id){if(confirm('Supprimer ?')){await api('/admin/finance/'+id,'DELETE');await refresh()}}
-async function refresh(){A=await api('/admin/all');drawA();loadLegal()}
+async function refresh(){A=await api('/admin/all');drawA();loadLegal();loadMaint()}
 async function load(){P=await(await fetch('/api/public',{cache:'no-store'})).json();render();legalRender()}
 const MENT_DEF=()=>{return ''};
 function legalRender(){const L=P.legal||{};const t=s=>esc(s||'').replace(/\n/g,'<br>');
@@ -199,5 +250,39 @@ let lgDirty=false;async function loadLegal(){if(lgDirty)return;try{const r=await
 async function saveLegal(){try{lgDirty=false;const r=await api('/admin/legal','PUT',{cgv:$('#lgCgv').value,mentions:$('#lgMen').value,notifier:$('#lgNotif').checked});$('#lgMsg').innerHTML=r.warn?`<div class="msg ko">⚠️ Enregistré, mais pas de façon durable : ${esc(r.warn)}</div>`:'<div class="msg ok">Enregistré'+(r.notifies?' — '+r.notifies+' abonné(s) prévenu(s)':'')+'</div>';await load()}catch(x){lgDirty=true;$('#lgMsg').innerHTML=`<div class="msg ko">${/404/.test(x)?'Le serveur n’est pas à jour : renvoie server.js sur GitHub puis attends la fin du déploiement Render.':esc(x)}</div>`}}
 
 setInterval(async()=>{if(document.hidden)return;try{const p=await(await fetch('/api/public',{cache:'no-store'})).json();if(JSON.stringify(p)!==JSON.stringify(P)){P=p;render();legalRender()}if(T&&$('#panel').style.display=='block'){A=await api('/admin/all');drawA()}}catch{}},15000);
-show('home');load().then(()=>{if(T)openAdmin()});
+/* ---- Écran de chargement ---- */
+const t0=Date.now();let splashDone=false;
+function hideSplash(){if(splashDone)return;splashDone=true;const s=$('#splash');$('#spL').classList.remove('fill');$('#spB').style.width='100%';setTimeout(()=>{s.classList.add('out');setTimeout(()=>s.remove(),500)},250)}
+setTimeout(hideSplash,8000);
+/* ---- Application installable ---- */
+let dp=null;const standalone=matchMedia('(display-mode: standalone)').matches||navigator.standalone;
+if('serviceWorker'in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('/sw.js').catch(()=>{});
+if(!standalone)$('#inst').style.display='inline-block';
+addEventListener('beforeinstallprompt',e=>{e.preventDefault();dp=e});
+addEventListener('appinstalled',()=>{$('#inst').style.display='none'});
+async function installApp(){if(dp){dp.prompt();await dp.userChoice.catch(()=>{});dp=null;return}
+const u=navigator.userAgent,ios=/iPhone|iPad|iPod/.test(u)||(navigator.platform=='MacIntel'&&navigator.maxTouchPoints>1),mac=/Macintosh/.test(u)&&!ios,and=/Android/.test(u);
+$('#imT').innerHTML=ios?'Sur iPhone / iPad : touche le bouton <b>Partager</b> (le carré avec une flèche), puis <b>« Sur l’écran d’accueil »</b>.'
+:mac?'Sur Mac avec Safari : menu <b>Fichier</b> puis <b>« Ajouter au Dock »</b>. Avec Chrome ou Edge : icône d’installation dans la barre d’adresse.'
+:and?'Sur Android : ouvre le menu <b>⋮</b> du navigateur puis <b>« Installer l’application »</b> (ou « Ajouter à l’écran d’accueil »).'
+:'Sur Windows avec Chrome ou Edge : clique sur l’icône d’installation à droite de la barre d’adresse, ou menu <b>⋮</b> puis <b>« Installer Sound & Light »</b>.';
+$('#im').style.display='flex'}
+/* ---- État du site : maintenance et nouvelle version ---- */
+let BID=null,fails=0,mtOn=false,mtEnd=0,mtTick=null;
+function showMt(o){mtOn=true;$('#mtT').textContent=o.kind=='maj'||o.kind=='down'?'Mise à jour en cours':'Maintenance en cours';
+$('#mtP').textContent=o.msg||'Le site revient très vite.';$('#mnt').style.display='flex';$('#mtA').style.display=o.kind=='manuel'?'block':'none';
+mtEnd=o.est?Date.now()+o.left:0;clearInterval(mtTick);const up=()=>{const e=$('#mtE');if(!mtEnd){e.textContent=o.kind=='down'?'Durée estimée : 2 à 3 minutes':'';return}
+const l=mtEnd-Date.now();e.textContent=l>0?'Durée estimée restante : '+Math.floor(l/60000)+' min '+String(Math.floor(l/1000)%60).padStart(2,'0')+' s':'Plus que quelques instants…'};up();mtTick=setInterval(up,1000)}
+function mtBypass(){sessionStorage.bypass=1;$('#mnt').style.display='none';mtOn=false;$('#mtB').style.display='block';show('admin')}
+async function poll(){try{const r=await fetch('/api/status',{cache:'no-store'});const j=await r.json();fails=0;
+if(BID&&j.id!==BID){showMt({kind:'maj',msg:'Nouvelle version disponible, rechargement…'});setTimeout(()=>location.reload(),1200);return}BID=j.id;const m=j.maintenance||{};
+if(m.on){if(T||sessionStorage.bypass){$('#mtB').style.display='block'}else showMt(m)}else{$('#mtB').style.display='none';if(mtOn)location.reload()}}
+catch{fails++;if(fails>=2)showMt({kind:'down',msg:'Le site redémarre, la page se rechargera toute seule.'})}}
+setInterval(poll,4000);poll();
+/* ---- Admin : maintenance & mise à jour ---- */
+async function loadMaint(){try{const r=await api('/admin/maintenance');$('#mtS').textContent=r.maint.on?'Maintenance ACTIVE : le site est fermé aux visiteurs.':'Le site est en ligne.';if(r.maint.msg&&!$('#mtMsg').value)$('#mtMsg').value=r.maint.msg}catch{}}
+async function setMaint(on){try{await api('/admin/maintenance','POST',{on,minutes:+$('#mtMin').value||15,msg:$('#mtMsg').value});$('#mtR').innerHTML=`<div class="msg ok">${on?'Maintenance activée':'Site remis en ligne'}</div>`;loadMaint()}catch(x){$('#mtR').innerHTML=`<div class="msg ko">${esc(x)}</div>`}}
+async function deploySite(){if(!confirm('Lancer la mise à jour du site ? Il sera indisponible quelques minutes.'))return;try{await api('/admin/deploy','POST',{minutes:+$('#mtMin').value||3});$('#mtR').innerHTML='<div class="msg ok">Mise à jour lancée. Les visiteurs voient la page de mise à jour et le site se recharge tout seul.</div>'}catch(x){$('#mtR').innerHTML=`<div class="msg ko">${esc(x)}</div>`}}
+show((tabs.find(t=>'#'+t[0]==location.hash)||['home'])[0]);
+load().then(()=>{if(T)openAdmin()}).catch(()=>{}).finally(()=>setTimeout(hideSplash,Math.max(0,1100-(Date.now()-t0))));
 </script></body></html>
