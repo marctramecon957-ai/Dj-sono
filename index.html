@@ -31,8 +31,18 @@ input,select,textarea{width:100%;padding:10px;border-radius:8px;border:1px solid
 .btn{background:linear-gradient(90deg,#ff1e2d,#b30012);border:0;color:#fff;padding:10px 18px;border-radius:6px;cursor:pointer;font-weight:600;margin:8px 6px 0 0}
 .btn.s{padding:6px 12px;font-size:12px}.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .ct{display:flex;gap:14px;align-items:center}.ct img{width:84px;height:84px;border-radius:50%;object-fit:cover;border:3px solid var(--pink)}
-.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center}.cal div{padding:9px 0;border-radius:8px;font-size:13px}.cal .h{color:var(--cyan);font-size:11px}
-.d0{background:#fff;color:#111}.d1{background:#e11d2e;color:#fff}.d2{background:#2563eb;color:#fff}.adm .cal .d{cursor:pointer}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;text-align:center;animation:calin .35s ease both}.cal .h{color:var(--cyan);font-size:11px;padding:6px 0;letter-spacing:1px}
+.cal .d{aspect-ratio:1;display:grid;place-items:center;border-radius:12px;font-size:14px;font-weight:600;position:relative;cursor:pointer;border:1px solid transparent;transition:transform .18s,box-shadow .18s,background .18s;user-select:none}
+.cal .d:hover{transform:translateY(-2px)}.cal .d.sel{transform:scale(1.1);box-shadow:0 0 16px rgba(255,30,45,.65);z-index:1}
+.d0{background:rgba(43,182,115,.14);border-color:rgba(43,182,115,.55)!important;color:#d9ffec}.d1{background:linear-gradient(135deg,#e11d2e,#8f0f1b);color:#fff}.d2{background:linear-gradient(135deg,#2f6df0,#1b3f9a);color:#fff}
+.cal .d.past{opacity:.3;cursor:default}.cal .d.past:hover{transform:none}.cal .d.today{outline:2px solid var(--yel);outline-offset:2px}.cal .e{visibility:hidden}
+.pt{position:absolute;bottom:5px;width:6px;height:6px;border-radius:50%;box-shadow:0 0 6px currentColor}
+.cinfo{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 12px}.chip{background:#0b0507;border:1px solid #5a1520;border-radius:20px;padding:7px 14px;font-size:13px;color:#e6e6ea}.chip b{color:#fff}
+.leg2{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:#cdb3b7;margin-bottom:10px}.leg2 span{display:flex;align-items:center;gap:6px}.leg2 i{width:12px;height:12px;border-radius:4px;display:inline-block}
+.cbar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:6px 0 10px}.cbar b{text-transform:capitalize;font-size:17px}
+.dayi{border:1px solid #5a1520;border-left:5px solid var(--pink);border-radius:10px;padding:14px;margin-top:14px;background:#0b0507;animation:up .35s both}.dayi b{text-transform:capitalize}
+@keyframes calin{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.adm .cal .d{cursor:pointer}
 .bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
 .msg{padding:10px;border-radius:8px;margin-top:10px}.ok{background:#0f5132}.ko{background:#7a1020}
 table{width:100%;border-collapse:collapse;font-size:13px}td,th{padding:6px;border-bottom:1px solid #4a1520;text-align:left}
@@ -120,16 +130,22 @@ header{padding-top:calc(26px + env(safe-area-inset-top))}main{padding-left:max(1
 <section id="contact"><h2>Nous contacter</h2><div id="cts"></div></section>
 
 <section id="dispo"><div class="card"><h2>Disponibilités</h2>
-<div class="leg"><span>⬜ Disponible</span><span>🟥 Indisponible</span><span>🟦 En vacances</span></div>
-<div class="bar"><button class="btn s" onclick="mv(-1)">◀</button><b id="mt"></b><button class="btn s" onclick="mv(1)">▶</button></div>
-<div id="pc"></div></div></section>
+<div class="cinfo" id="cInfo"></div>
+<div class="leg2"><span><i class="d0" style="border:1px solid #2bb673"></i>Disponible</span><span><i style="background:#c4101c"></i>Indisponible</span><span><i style="background:#2f6df0"></i>En vacances</span></div>
+<div class="cbar"><button class="btn s" aria-label="Mois précédent" onclick="mv(-1)">◀</button><b id="mt"></b><button class="btn s" aria-label="Mois suivant" onclick="mv(1)">▶</button></div>
+<div style="text-align:center;margin-bottom:8px"><button class="btn s" style="background:#333" onclick="goToday()">Aujourd'hui</button></div>
+<div id="pc"></div><div id="dayInfo"></div></div></section>
 
 <section id="admin"><div id="login" class="card"><h2>Espace Admin</h2><label>Mot de passe</label><input type="password" id="pw"><button class="btn" onclick="login()">Connexion</button><div id="lm"></div></div>
 <div id="panel" style="display:none" class="adm">
 <div class="card"><h3>Accueil</h3><label>Titre du site</label><input id="a_t"><label>Prestations proposées aux clients (décoche pour cacher dans « Déposer un dossier »)</label><div class="pr"><input type="checkbox" id="s_DJ"><label for="s_DJ" style="margin:0;color:#fff">DJ</label><input type="checkbox" id="s_Artificier"><label for="s_Artificier" style="margin:0;color:#fff">Artificier</label><input type="checkbox" id="s_Lighter"><label for="s_Lighter" style="margin:0;color:#fff">Lighter</label></div><label>Texte de présentation de l'accueil (1ère ligne = titre, les lignes suivantes = paragraphes)</label><textarea id="a_a" style="min-height:150px"></textarea><label>📁 Importer des images / vidéos depuis ton ordinateur</label><input type="file" id="up_h" multiple accept="image/*,video/*" onchange="upl(this,'a_h')"><div id="upm"></div><label>Liste (1 lien par ligne, tu peux réordonner ou supprimer)</label><textarea id="a_h"></textarea><button class="btn s" onclick="saveSite()">Enregistrer</button></div>
 <div class="card"><h3>Contacts</h3><label>1 ligne par personne : Nom | Rôle | Téléphone | Email | Lien photo</label><textarea id="a_c"></textarea><label>📁 Importer une photo : clique dans la ligne de la personne, après le dernier « | », puis choisis le fichier</label><input type="file" id="up_c" accept="image/*" onchange="upl(this,'a_c')"><div id="upm2"></div><button class="btn s" onclick="saveC()">Enregistrer</button></div>
-<div class="card"><h3>Mails</h3><button class="btn s" onclick="tmail()">Envoyer un mail de test</button><div id="tm"></div></div><div class="card"><h3>Calendrier</h3><p style="font-size:12px">Clique sur un jour : Blanc → Rouge → Bleu → Blanc</p>
-<div class="bar"><button class="btn s" onclick="mv(-1)">◀</button><b id="mt2"></b><button class="btn s" onclick="mv(1)">▶</button></div><div id="ac"></div></div>
+<div class="card"><h3>Mails</h3><button class="btn s" onclick="tmail()">Envoyer un mail de test</button><div id="tm"></div></div><div class="card"><h3>Calendrier</h3><p style="font-size:12px;color:#cdb3b7">Clique sur un jour : Disponible → Indisponible → Vacances → Disponible.<br><span style="color:#ffd23f">●</span> dossier en attente &nbsp; <span style="color:#2bb673">●</span> dossier accepté ou payé</p>
+<div class="cbar"><button class="btn s" aria-label="Mois précédent" onclick="mv(-1)">◀</button><b id="mt2"></b><button class="btn s" aria-label="Mois suivant" onclick="mv(1)">▶</button></div><div id="ac"></div></div>
+<div class="card"><h3>Numéros de dossier</h3>
+<p style="font-size:13px;color:#cdb3b7;line-height:1.6">Chaque dossier a un numéro (ex. SL-2026-001) et un code de suivi. Les anciens dossiers sont numérotés automatiquement. Le mail d'information part <b>une seule fois</b> par client.</p>
+<p id="nbS" style="font-size:13px;color:var(--cyan)"></p>
+<button class="btn s" onclick="noticeSend(true)">M'envoyer un exemple</button><button class="btn" id="nbBtn" onclick="noticeSend(false)">Envoyer le mail aux clients</button><div id="nbR"></div></div>
 <div class="card"><h3>Maintenance &amp; mises à jour</h3>
 <p id="mtS" style="font-size:13px;color:var(--cyan)"></p>
 <label>Message affiché aux visiteurs</label><input id="mtMsg" placeholder="Ex. Nous améliorons le site, retour très vite">
@@ -168,10 +184,23 @@ const tabs=[['home','Accueil'],['dossier','Déposer un dossier'],['suivi','Suivi
 $('#nav').innerHTML=tabs.map(t=>`<button data-t="${t[0]}" onclick="show('${t[0]}')">${t[1]}</button>`).join('');
 function show(id){document.querySelectorAll('section').forEach(s=>s.classList.toggle('on',s.id==id));document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.t==id))}
 const iso=(y,m,d)=>`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+let selDay='';const TK=(()=>{const n=new Date();return iso(n.getFullYear(),n.getMonth(),n.getDate())})();
+const stOf=k=>({busy:1,vacation:2}[P.calendar[k]]||0);
 function calHtml(adm){const y=cur.getFullYear(),m=cur.getMonth(),f=(new Date(y,m,1).getDay()+6)%7,n=new Date(y,m+1,0).getDate();
-let h=['L','M','M','J','V','S','D'].map(x=>`<div class="h">${x}</div>`).join('')+'<div></div>'.repeat(f);
-for(let d=1;d<=n;d++){const k=iso(y,m,d),s={busy:1,vacation:2}[P.calendar[k]]||0;h+=`<div class="d d${s}" ${adm?`onclick="tog('${k}')"`:''}>${d}</div>`}return `<div class="cal">${h}</div>`}
-function drawCal(){const t=cur.toLocaleDateString('fr-FR',{month:'long',year:'numeric'});$('#mt').textContent=$('#mt2').textContent=t;$('#pc').innerHTML=calHtml(0);$('#ac').innerHTML=calHtml(1)}
+let h=['L','M','M','J','V','S','D'].map(x=>`<div class="h">${x}</div>`).join('')+'<div class="e"></div>'.repeat(f);
+for(let d=1;d<=n;d++){const k=iso(y,m,d),s=stOf(k),past=!adm&&k<TK;let dot='';
+if(adm){const ds=A.dossiers.filter(x=>x.date==k&&x.status!='refused'&&x.status!='refunded');if(ds.length)dot=`<i class="pt" style="background:${ds.some(x=>x.status=='accepted'||x.status=='paid')?'#2bb673':'#ffd23f'};color:${ds.some(x=>x.status=='accepted'||x.status=='paid')?'#2bb673':'#ffd23f'}"></i>`}
+h+=`<div class="d d${s}${past?' past':''}${k==TK?' today':''}${!adm&&k==selDay?' sel':''}" ${adm?`onclick="tog('${k}')"`:(past?'':`onclick="pick('${k}')"`)}>${d}${dot}</div>`}
+return `<div class="cal">${h}</div>`}
+function dispoInfo(){const y=cur.getFullYear(),m=cur.getMonth(),n=new Date(y,m+1,0).getDate();let free=0;for(let d=1;d<=n;d++){const k=iso(y,m,d);if(k>=TK&&!stOf(k))free++}
+let nx='';const t=new Date();for(let j=0;j<400;j++){const dt=new Date(t.getFullYear(),t.getMonth(),t.getDate()+j),kk=iso(dt.getFullYear(),dt.getMonth(),dt.getDate());if(!stOf(kk)){nx=dt.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'});break}}
+$('#cInfo').innerHTML=`<div class="chip"><b>${free}</b> jour${free>1?'s':''} libre${free>1?'s':''} ce mois-ci</div>${nx?`<div class="chip">Prochaine date libre : <b>${nx}</b></div>`:''}`}
+function pick(k){selDay=selDay==k?'':k;drawCal()}
+function dayPanel(){const e=$('#dayInfo');if(!selDay){e.innerHTML='';return}const dt=new Date(selDay+'T12:00:00'),s=stOf(selDay),lbl=dt.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+e.innerHTML=`<div class="dayi" style="border-left-color:${s==0?'#2bb673':s==1?'#e11d2e':'#2f6df0'}"><b>${lbl}</b><p style="margin:6px 0 0;color:#cdb3b7">${s==0?'Cette date est disponible.':s==1?'Cette date n’est plus disponible.':'Nous sommes en vacances à cette date.'}</p>${s==0?`<button class="btn" style="margin-top:12px" onclick="useDate('${selDay}')">Déposer un dossier pour cette date</button>`:''}</div>`}
+function useDate(k){show('dossier');const f=$('#fd');f.value=k;f.dispatchEvent(new Event('input',{bubbles:true}));f.dispatchEvent(new Event('change',{bubbles:true}));scrollTo({top:0,behavior:'smooth'})}
+function goToday(){cur=new Date();drawCal()}
+function drawCal(){const t=cur.toLocaleDateString('fr-FR',{month:'long',year:'numeric'});$('#mt').textContent=$('#mt2').textContent=t;$('#pc').innerHTML=calHtml(0);$('#ac').innerHTML=calHtml(1);dispoInfo();dayPanel()}
 const mv=n=>{cur=new Date(cur.getFullYear(),cur.getMonth()+n,1);drawCal()};
 async function tog(k){const c=P.calendar[k];if(!c)P.calendar[k]='busy';else if(c=='busy')P.calendar[k]='vacation';else delete P.calendar[k];drawCal();await api('/admin/calendar','PUT',P.calendar)}
 const DEF="Des jeunes passionnés au service de vos soirées\nNous sommes une équipe de jeunes passionnés par la musique, la lumière et l'événementiel. DJ, lumières, effets pyrotechniques : nous mettons toute notre énergie pour faire de votre soirée un moment inoubliable, de l'anniversaire entre amis au festival.\nUne idée, une date, un budget ? Déposez votre dossier, nous vous répondons rapidement.";
@@ -200,7 +229,7 @@ for(let k=0;k<4;k++){const done=k<m.d&&m.f!==k,cur=k===m.c,fail=m.f===k;
 const lOn=k>0&&(k-1<m.d&&m.f!==k-1),rOn=k<3&&(k<m.d&&m.f!==k);
 col.push(`<div class="s"><div class="l"><div class="b${lOn?' on':''}${lOn&&cur?' run':''}${k==0?' x':''}" data-on="${lOn?1:0}"><i style="transition-delay:${(k-1)*G+520}ms"></i></div><div class="c ${done?'done':cur?'cur':fail?'fail':''}" style="transition-delay:${k*G}ms${cur?`;animation-delay:${k*G+450}ms`:''}">${fail?'✕':done?'✓':k+1}</div><div class="b${rOn?' on':''}${k==3?' x':''}" data-on="${rOn?1:0}"><i style="transition-delay:${k*G+260}ms"></i></div></div><div class="t ${fail?'bad':(done||cur)?'hi':''}">${fail?'Refusé':STEPS[k]}</div></div>`)}
 let actions='';if(d.status=='accepted')actions=`<button class="btn" onclick="payerSuivi()">Payer mon dossier</button>`;if(d.status=='paid')actions=`<button class="btn s" onclick="demanderRemb()">Demander un remboursement</button>`;
-si.innerHTML=`<p style="margin:0 0 4px"><b>${esc(d.service)}</b> — ${esc(d.lastName)}<br><span style="color:#cdb3b7">Date : ${esc(d.date)}</span></p><div class="trk">${col.join('')}</div>
+si.innerHTML=`<p style="margin:0 0 4px">${d.num?`<span style="color:#ff8a92;font-size:13px">Dossier n° ${esc(d.num)}</span><br>`:''}<b>${esc(d.service)}</b> — ${esc(d.lastName)}<br><span style="color:#cdb3b7">Date : ${esc(d.date)}</span></p><div class="trk">${col.join('')}</div>
 <div class="stat s-${esc(d.status)}"><b>${tx[0]}</b><p>${tx[1]}</p>${d.total?`<p>Montant : <b>${d.total} €</b></p>`:''}</div>
 <div id="suiviActions">${actions}</div><div id="suiviActMsg"></div><button class="btn s" style="background:#333" onclick="autreSuivi()">Suivre un autre dossier</button>`;
 requestAnimationFrame(()=>requestAnimationFrame(()=>{si.querySelectorAll('.c').forEach(e=>e.classList.add('show'));si.querySelectorAll('.b').forEach(e=>{if(e.dataset.on==='1')e.classList.add('on')})}))}
@@ -211,11 +240,11 @@ async function login(){try{T=(await api('/login','POST',{password:$('#pw').value
 async function openAdmin(){try{A=await api('/admin/all')}catch{localStorage.t='';return}
 $('#login').style.display='none';$('#panel').style.display='block';$('#a_t').value=P.site.title;$('#a_a').value=P.site.about||DEF;['DJ','Artificier','Lighter'].forEach(k=>$('#s_'+k).checked=(P.site.services||{})[k]!==false);$('#a_h').value=(P.site.hero||[]).join('\n');
 $('#a_c').value=P.contacts.map(c=>[c.name,c.role,c.phone,c.email,c.photo].join(' | ')).join('\n');
-const n=new Date();$('#fm').value=n.toISOString().slice(0,7);$('#fy').value=n.getFullYear();$('#fm').onchange=$('#fy').oninput=drawA;drawA()}
+const n=new Date();$('#fm').value=n.toISOString().slice(0,7);$('#fy').value=n.getFullYear();$('#fm').onchange=$('#fy').oninput=drawA;drawA();loadLegal();loadMaint();loadNotice()}
 async function saveSite(){await api('/admin/site','PUT',{title:$('#a_t').value,about:$('#a_a').value,services:{DJ:$('#s_DJ').checked,Artificier:$('#s_Artificier').checked,Lighter:$('#s_Lighter').checked},hero:$('#a_h').value.split('\n').map(x=>x.trim()).filter(Boolean)});await load();alert('Enregistré')}
 async function saveC(){await api('/admin/contacts','PUT',$('#a_c').value.split('\n').filter(x=>x.trim()).map(l=>{const [name,role,phone,email,photo]=l.split('|').map(x=>x.trim());return{name,role,phone,email,photo}}));await load();alert('Enregistré')}
 const ST={pending:'En attente',accepted:'Accepté',refused:'Refusé',paid:'Payé',refund_requested:'Remboursement demandé',refunded:'Remboursé'};
-function drawA(){$('#ds').innerHTML='<table><tr><th>Client</th><th>Prestation</th><th>Date</th><th>Budget</th><th>Contact</th><th>Lieu</th><th>Statut</th><th></th></tr>'+A.dossiers.map(d=>`<tr><td>${esc(d.lastName)}</td><td>${esc(d.service)}</td><td>${esc(d.date)}</td><td>${d.budgetMin}–${d.budgetMax} €</td><td>${esc(d.phone)}<br>${esc(d.email)}</td><td>${esc(d.address)}</td><td><span class="tag">${ST[d.status]}</span>${d.trackCode?`<br><small>Code : ${esc(d.trackCode)}</small>`:''}</td><td>${d.status=='pending'?`<button class="btn s" onclick="dec('${d.id}',1)">Accepter</button><button class="btn s" onclick="dec('${d.id}',0)">Refuser</button>`:''}${d.status=='accepted'?`<button class="btn s" onclick="pay('${d.id}')">Encaisser + reçu</button>`:''}${d.status=='refund_requested'?`<button class="btn s" onclick="remb('${d.id}',1)">Accepter remboursement</button><button class="btn s" onclick="remb('${d.id}',0)">Refuser</button>`:''}</td></tr>`).join('')+'</table>';
+function drawA(){$('#ac').innerHTML=calHtml(1);$('#ds').innerHTML='<table><tr><th>Client</th><th>Prestation</th><th>Date</th><th>Budget</th><th>Contact</th><th>Lieu</th><th>Statut</th><th></th></tr>'+A.dossiers.map(d=>`<tr><td>${esc(d.lastName)}${d.num?`<br><small style="color:#ff8a92">${esc(d.num)}</small>`:''}</td><td>${esc(d.service)}</td><td>${esc(d.date)}</td><td>${d.budgetMin}–${d.budgetMax} €</td><td>${esc(d.phone)}<br>${esc(d.email)}</td><td>${esc(d.address)}</td><td><span class="tag">${ST[d.status]}</span>${d.trackCode?`<br><small>Code : ${esc(d.trackCode)}</small>`:''}</td><td>${d.status=='pending'?`<button class="btn s" onclick="dec('${d.id}',1)">Accepter</button><button class="btn s" onclick="dec('${d.id}',0)">Refuser</button>`:''}${d.status=='accepted'?`<button class="btn s" onclick="pay('${d.id}')">Encaisser + reçu</button>`:''}${d.status=='refund_requested'?`<button class="btn s" onclick="remb('${d.id}',1)">Accepter remboursement</button><button class="btn s" onclick="remb('${d.id}',0)">Refuser</button>`:''}</td></tr>`).join('')+'</table>';
 const m=$('#fm').value,y=$('#fy').value,sum=(t,p)=>A.finances.filter(f=>f.type==t&&f.date.startsWith(p)).reduce((a,f)=>a+f.amount,0),e=x=>x.toFixed(2)+' €';
 $('#tot').innerHTML=`<table><tr><th></th><th>Mois ${m}</th><th>Année ${y}</th></tr>${[['Revenus','revenue'],['Dépenses','expense'],['Budget','budget']].map(r=>`<tr><td>${r[0]}</td><td>${e(sum(r[1],m))}</td><td>${e(sum(r[1],y))}</td></tr>`).join('')}<tr><td><b>Solde (revenus − dépenses)</b></td><td><b>${e(sum('revenue',m)-sum('expense',m))}</b></td><td><b>${e(sum('revenue',y)-sum('expense',y))}</b></td></tr></table>`;
 $('#ft').innerHTML='<tr><th>Date</th><th>Type</th><th>Nom</th><th>Montant</th><th>Note</th><th></th></tr>'+[...A.finances].sort((a,b)=>b.date.localeCompare(a.date)).map(f=>`<tr><td>${f.date}</td><td>${{revenue:'Revenu',expense:'Dépense',budget:'Budget'}[f.type]}</td><td>${esc(f.name)}</td><td>${e(f.amount)}</td><td>${esc(f.note)}</td><td><button class="btn s" onclick="delF('${f.id}')">✕</button></td></tr>`).join('')}
@@ -236,7 +265,7 @@ async function psend(){const miss=PRE.filter((n,i)=>$('#c'+i).checked&&!(parseFl
 const lines=plines();if(!lines.length){alert('Coche au moins une prestation et mets un montant');return}try{await api('/admin/pay/'+PID,'POST',{lines});$('#pm').style.display='none';await refresh()}catch(x){alert(x)}}
 async function addF(e){e.preventDefault();await api('/admin/finance','POST',Object.fromEntries(new FormData(e.target)));e.target.reset();await refresh();return false}
 async function delF(id){if(confirm('Supprimer ?')){await api('/admin/finance/'+id,'DELETE');await refresh()}}
-async function refresh(){A=await api('/admin/all');drawA();loadLegal();loadMaint()}
+async function refresh(){A=await api('/admin/all');drawA();loadLegal();loadMaint();loadNotice()}
 async function load(){P=await(await fetch('/api/public',{cache:'no-store'})).json();render();legalRender()}
 const MENT_DEF=()=>{return ''};
 function legalRender(){const L=P.legal||{};const t=s=>esc(s||'').replace(/\n/g,'<br>');
@@ -280,6 +309,13 @@ if(m.on){if(T||sessionStorage.bypass){$('#mtB').style.display='block'}else showM
 catch{fails++;if(fails>=2)showMt({kind:'down',msg:'Le site redémarre, la page se rechargera toute seule.'})}}
 setInterval(poll,4000);poll();
 /* ---- Admin : maintenance & mise à jour ---- */
+let nbTimer=null;
+async function loadNotice(){try{const r=await api('/admin/notice');const b=$('#nbBtn');
+$('#nbS').textContent=r.running?`Envoi en cours… ${r.sent}/${r.clients} clients prévenus`:r.remaining==0&&r.clients?`Tous les clients (${r.clients}) ont été prévenus.`:`${r.clients} client(s) à prévenir${r.sent?` — ${r.sent} déjà prévenu(s)`:''}${r.failed?` — ${r.failed} échec(s)`:''}.`;
+b.disabled=r.running||r.remaining==0;b.style.opacity=b.disabled?.5:1;if(r.lastError&&!r.running&&r.failed)$('#nbR').innerHTML=`<div class="msg ko">Dernière erreur : ${esc(r.lastError)}</div>`;
+if(r.running&&!nbTimer)nbTimer=setInterval(loadNotice,3000);if(!r.running&&nbTimer){clearInterval(nbTimer);nbTimer=null}}catch{}}
+async function noticeSend(test){if(!test&&!confirm('Envoyer le mail d\'information à tous les clients ? Cet envoi ne se fait qu\'une seule fois par client.'))return;
+try{const r=await api('/admin/notice','POST',{test});$('#nbR').innerHTML=test?(r.ok?`<div class="msg ok">Exemple envoyé à ${esc(r.to)}</div>`:`<div class="msg ko">${esc(r.error||'Échec')}</div>`):`<div class="msg ok">Envoi lancé pour ${r.total} client(s).${r.warn?' '+esc(r.warn):''}</div>`;loadNotice()}catch(x){$('#nbR').innerHTML=`<div class="msg ko">${esc(x)}</div>`}}
 async function loadMaint(){try{const r=await api('/admin/maintenance');$('#mtS').textContent=r.maint.on?'Maintenance ACTIVE : le site est fermé aux visiteurs.':'Le site est en ligne.';if(r.maint.msg&&!$('#mtMsg').value)$('#mtMsg').value=r.maint.msg}catch{}}
 async function setMaint(on){try{await api('/admin/maintenance','POST',{on,minutes:+$('#mtMin').value||15,msg:$('#mtMsg').value});$('#mtR').innerHTML=`<div class="msg ok">${on?'Maintenance activée':'Site remis en ligne'}</div>`;loadMaint()}catch(x){$('#mtR').innerHTML=`<div class="msg ko">${esc(x)}</div>`}}
 async function deploySite(){if(!confirm('Lancer la mise à jour du site ? Il sera indisponible quelques minutes.'))return;try{await api('/admin/deploy','POST',{minutes:+$('#mtMin').value||3});$('#mtR').innerHTML='<div class="msg ok">Mise à jour lancée. Les visiteurs voient la page de mise à jour et le site se recharge tout seul.</div>'}catch(x){$('#mtR').innerHTML=`<div class="msg ko">${esc(x)}</div>`}}
