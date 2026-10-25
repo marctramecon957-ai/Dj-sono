@@ -1,5 +1,5 @@
 const express = require('express'), fs = require('fs'), crypto = require('crypto'), nodemailer = require('nodemailer');
-console.log('Démarrage… [build pwa-maintenance v9]');
+console.log('Démarrage… [build dossiers-num v10]');
 process.on('uncaughtException', e => console.error('ERREUR FATALE', e));
 process.on('unhandledRejection', e => console.error('ERREUR PROMESSE', e));
 const app = express();
@@ -11,7 +11,7 @@ app.use('/api', (_, res, next) => { res.set('Cache-Control', 'no-store'); next()
 const IDX = [path.join(__dirname, 'public', 'index.html'), path.join(__dirname, 'index.html')].find(p => fs.existsSync(p));
 app.get('/', (_, res) => res.set('Cache-Control', 'no-store').sendFile(IDX));
 const BUILD = Date.now().toString(36);
-app.get('/api/version', (_, res) => res.json({ build: 'pwa-maintenance v9', id: BUILD, icones: readIcon('icon-512.png') ? 'fichiers PNG' : 'secours (ajoute les 3 fichiers PNG)' }));
+app.get('/api/version', (_, res) => res.json({ build: 'dossiers-num v10', id: BUILD, icones: readIcon('icon-512.png') ? 'fichiers PNG' : 'secours (ajoute les 3 fichiers PNG)' }));
 
 // ---- Application installable (PWA) : icônes, manifeste, service worker ----
 const readIcon = n => { try { return fs.readFileSync(path.join(__dirname, n)); } catch { return null; } };
@@ -152,11 +152,17 @@ app.post('/api/login', (req, res) => {
 
 // ---- Suivi de dossier (code unique client) ----
 const genCode = () => crypto.randomBytes(5).toString('hex').toUpperCase();
+const nextNum = y => { const re = new RegExp('^SL-' + y + '-(\\d+)$'); let mx = 0; for (const x of D.dossiers) { const m = re.exec(x.num || ''); if (m) mx = Math.max(mx, +m[1]); } return 'SL-' + y + '-' + String(mx + 1).padStart(3, '0'); };
+const assignNums = () => { let ch = false;
+  for (const d of [...D.dossiers].sort((a, b) => String(a.created || a.date).localeCompare(String(b.created || b.date)))) {
+    if (!d.trackCode) { let c; do c = genCode(); while (D.dossiers.some(x => x.trackCode === c)); d.trackCode = c; ch = true; }
+    if (!d.num) { d.num = nextNum(String(d.created || d.date || new Date().toISOString()).slice(0, 4)); ch = true; }
+  } return ch; };
 app.post('/api/suivi', (req, res) => {
   const code = String(req.body.code || '').trim().toUpperCase();
   const d = D.dossiers.find(x => x.trackCode === code);
   if (!d) return res.status(404).json({ error: 'Code introuvable' });
-  res.json({ dossier: { service: d.service, date: d.date, lastName: d.lastName, status: d.status, total: d.total || null, refund: d.refund || null } });
+  res.json({ dossier: { num: d.num, service: d.service, date: d.date, lastName: d.lastName, status: d.status, total: d.total || null, refund: d.refund || null } });
 });
 app.post('/api/suivi/paiement', async (req, res) => {
   const code = String(req.body.code || '').trim().toUpperCase();
@@ -201,7 +207,7 @@ app.post('/api/newsletter/desinscription', (req, res) => {
 
 app.post('/api/dossier', async (req, res) => {
   const b = req.body, s = String;
-  const d = { id: crypto.randomUUID(), trackCode: genCode(), created: new Date().toISOString(), service: s(b.service).slice(0, 20), date: s(b.date), lastName: s(b.lastName).slice(0, 60),
+  const d = { id: crypto.randomUUID(), trackCode: genCode(), num: nextNum(String(new Date().getFullYear())), created: new Date().toISOString(), service: s(b.service).slice(0, 20), date: s(b.date), lastName: s(b.lastName).slice(0, 60),
     budgetMin: +b.budgetMin, budgetMax: +b.budgetMax, email: s(b.email).slice(0, 120), phone: s(b.phone).slice(0, 30), address: s(b.address).slice(0, 200) };
   if (!['DJ', 'Artificier', 'Lighter'].includes(d.service) || svc()[d.service] === false || !/^\d{4}-\d{2}-\d{2}$/.test(d.date) || !d.lastName || !d.email || !d.phone || !d.address || !(d.budgetMax >= d.budgetMin))
     return res.status(400).json({ error: 'Formulaire incomplet ou invalide' });
@@ -210,9 +216,9 @@ app.post('/api/dossier', async (req, res) => {
   D.dossiers.unshift(d); save();
   const resume = `${d.service} le ${fd(d.date)} — ${d.lastName}\nBudget : ${d.budgetMin}–${d.budgetMax} €\nLieu : ${d.address}\nTel : ${d.phone} / ${d.email}\nVotre code de suivi : ${d.trackCode}`;
   const budget = eur(d.budgetMin) + ' – ' + eur(d.budgetMax);
-  const summary = card(rows([['Prestation', d.service], ['Date', fd(d.date)], ['Lieu', d.address], ['Budget', budget]]));
-  const full = card(rows([['Prestation', d.service], ['Date', fd(d.date)], ['Nom', d.lastName], ['Budget', budget], ['Lieu', d.address], ['Téléphone', d.phone], ['E-mail', d.email]]));
-  const codeBox = card(rows([['Code de suivi', d.trackCode]]));
+  const summary = card(rows([['Dossier n°', d.num], ['Prestation', d.service], ['Date', fd(d.date)], ['Lieu', d.address], ['Budget', budget]]));
+  const full = card(rows([['Dossier n°', d.num], ['Prestation', d.service], ['Date', fd(d.date)], ['Nom', d.lastName], ['Budget', budget], ['Lieu', d.address], ['Téléphone', d.phone], ['E-mail', d.email]]));
+  const codeBox = card(rows([['Dossier n°', d.num], ['Code de suivi', d.trackCode]]));
   const site = process.env.SITE_URL || '';
   both(process.env.ADMIN_EMAIL, process.env.ADMIN_PHONE, `Nouveau dossier ${d.lastName}`, `Nouveau dossier${busy ? ' (date indisponible)' : ''}\n${resume}`,
     tpl('Nouveau dossier', p(busy ? 'Un client a déposé un dossier pour une <b>date indisponible</b> : un refus automatique lui a été envoyé.' : 'Un client vient de déposer un dossier. Tu peux l’accepter ou le refuser dans l’espace admin.') + full, { st: 'admin', sub: `${d.lastName} · ${d.service} · ${fd(d.date)}`, cta: 'Ouvrir l’espace admin' }));
@@ -252,7 +258,7 @@ app.post('/api/admin/decision/:id', adm, async (req, res) => {
   const d = D.dossiers.find(x => x.id === req.params.id); if (!d) return res.status(404).json({ error: 'Introuvable' });
   d.status = req.body.accept ? 'accepted' : 'refused'; save();
   const ok = d.status === 'accepted', dt = fd(d.date), site = process.env.SITE_URL || '';
-  const sm = card(rows([['Prestation', d.service], ['Date', dt], ['Lieu', d.address]]));
+  const sm = card(rows([['Dossier n°', d.num], ['Prestation', d.service], ['Date', dt], ['Lieu', d.address]]));
   both(d.email, d.phone, ok ? 'Dossier accepté' : 'Date non disponible',
     ok ? `Bonjour ${d.lastName}, bonne nouvelle : nous sommes disponibles le ${dt} et votre dossier est accepté ! Code de suivi : ${d.trackCode}` : `Bonjour ${d.lastName}, nous ne sommes malheureusement pas disponibles le ${dt}.`,
     tpl(ok ? 'Dossier accepté' : 'Date non disponible', p(`Bonjour ${E(d.lastName)},`) + (ok ? p(`Bonne nouvelle : nous sommes <b>disponibles le ${E(dt)}</b> et votre dossier <b>${E(d.service)}</b> est accepté. Vous pouvez désormais régler en ligne depuis l’espace suivi avec votre code <b>${E(d.trackCode)}</b>.`) : p(`Merci pour votre demande. Nous ne sommes malheureusement <b>pas disponibles le ${E(dt)}</b>. N’hésitez pas à nous proposer une autre date.`)) + sm,
@@ -271,7 +277,7 @@ app.post('/api/admin/pay/:id', adm, async (req, res) => {
     'Client : ' + d.lastName, 'Prestation : ' + d.service + ' (' + fd(d.date) + ')', '', ...lines.map(l => pad(l.label, l.amount.toFixed(2) + ' €')), '-'.repeat(40), pad('TOTAL PAYÉ', total.toFixed(2) + ' €'), '', 'Merci de votre confiance !'].join('\n');
   d.status = 'paid'; d.total = total; D.finances.push({ id: crypto.randomUUID(), type: 'revenue', name: d.lastName, amount: total, date: new Date().toISOString().slice(0, 10), note: 'Reçu ' + no });
   save();
-  const ticketHtml = rows([['Reçu n°', no], ['Date', new Date().toLocaleDateString('fr-FR')], ['Client', d.lastName], ['Prestation', d.service + ' — ' + fd(d.date)]]) + rows(lines.map(l => [l.label, eur(l.amount)])) + `<table width="100%" cellpadding="0" cellspacing="0" style="margin-top:12px"><tr><td style="font:bold 16px Arial,Helvetica,sans-serif;color:#ffffff;padding:6px 0">Total payé</td><td align="right" style="font:bold 22px Arial,Helvetica,sans-serif;color:#ffffff;padding:6px 0">${eur(total)}</td></tr></table>`;
+  const ticketHtml = rows([['Dossier n°', d.num], ['Reçu n°', no], ['Date', new Date().toLocaleDateString('fr-FR')], ['Client', d.lastName], ['Prestation', d.service + ' — ' + fd(d.date)]]) + rows(lines.map(l => [l.label, eur(l.amount)])) + `<table width="100%" cellpadding="0" cellspacing="0" style="margin-top:12px"><tr><td style="font:bold 16px Arial,Helvetica,sans-serif;color:#ffffff;padding:6px 0">Total payé</td><td align="right" style="font:bold 22px Arial,Helvetica,sans-serif;color:#ffffff;padding:6px 0">${eur(total)}</td></tr></table>`;
   both(d.email, d.phone, 'Votre reçu ' + no, ticket, tpl('Paiement reçu', p(`Bonjour ${E(d.lastName)}, merci pour votre confiance ! Voici le reçu de votre paiement.`) + ticketHtml + p('<span style="font-size:13px">Ce message fait office de reçu de paiement. Conservez-le.</span>'), { st: 'paid', sub: 'Reçu n° ' + no, cta: 'Voir mon dossier', ctaUrl: (process.env.SITE_URL || '') + '/#suivi', pre: 'Paiement de ' + eur(total) + ' bien reçu. Merci !' })); res.json({ ok: 1 });
 });
 
@@ -306,6 +312,33 @@ app.post('/api/admin/deploy', adm, async (req, res) => {
   deploying = { until: Date.now() + min * 60000, msg: 'Mise à jour du site en cours' }; res.json({ ok: 1 });
 });
 
+// ---- Mail d'information unique : numéro de dossier + code de suivi ----
+const noticeGroups = () => { const g = {}; for (const d of D.dossiers) { const e = String(d.email || '').trim().toLowerCase(); if (!e) continue; (g[e] = g[e] || []).push(d); } return g; };
+const noticeMail = (email, ds) => {
+  const site = (process.env.SITE_URL || '').replace(/\/$/, ''), list = ds.slice(0, 5), name = list[0].lastName;
+  const blocks = list.map(d => rows([['Dossier n°', d.num], ['Prestation', d.service + ' — ' + fd(d.date)], ['Code de suivi', d.trackCode]])).join('<div style="height:16px"></div>');
+  const text = `Bonjour ${name}, notre site a été mis à jour : chaque dossier a maintenant un numéro et un code de suivi personnel.\n\n` + list.map(d => `Dossier n° ${d.num} — ${d.service} le ${fd(d.date)}\nCode de suivi : ${d.trackCode}`).join('\n\n') + (site ? `\n\nSuivre mon dossier : ${site}/#suivi` : '') + '\n\nCe message est envoyé une seule fois.';
+  const html = tpl('Votre dossier a un numéro', p(`Bonjour ${E(name)},`) + p('Nous avons mis à jour notre site : chaque dossier a désormais un <b>numéro</b> et un <b>code de suivi</b> personnel. Avec ce code, vous suivez l’avancement de votre dossier à tout moment et vous pouvez régler en ligne dès qu’il est accepté.') + blocks + p('<span style="font-size:13px">Conservez ce code, il est personnel. Ce message est envoyé une seule fois.</span>'),
+    { sub: 'Un numéro et un code de suivi pour chaque dossier.', cta: site ? 'Suivre mon dossier' : undefined, ctaUrl: site ? site + '/#suivi' : undefined, pre: 'Voici le numéro et le code de suivi de votre dossier.' });
+  return { text, html };
+};
+app.get('/api/admin/notice', adm, (_, res) => { const g = noticeGroups(), n = D.notice || {}; const sent = new Set(n.sentTo || []);
+  res.json({ clients: Object.keys(g).length, remaining: Object.keys(g).filter(e => !sent.has(e)).length, sent: sent.size, failed: n.failed || 0, running: !!n.running, at: n.at || null, lastError: n.lastError || '' }); });
+app.post('/api/admin/notice', adm, async (req, res) => {
+  const g = noticeGroups();
+  if (req.body.test) { const to = process.env.ADMIN_EMAIL; if (!to) return res.status(400).json({ error: 'ADMIN_EMAIL manquant dans Render' });
+    const ds = D.dossiers.slice(0, 1); if (!ds.length) return res.status(400).json({ error: 'Aucun dossier pour faire un exemple' });
+    const m = noticeMail(to, ds); const err = await mail(to, 'Votre dossier a un numéro (exemple)', m.text, m.html); return res.json({ ok: !err, error: err || undefined, to }); }
+  if (D.notice && D.notice.running) return res.status(409).json({ error: 'Un envoi est déjà en cours' });
+  const done = new Set((D.notice && D.notice.sentTo) || []), todo = Object.keys(g).filter(e => !done.has(e));
+  if (!todo.length) return res.status(409).json({ error: 'Tous les clients ont déjà reçu ce mail.' });
+  D.notice = { at: (D.notice && D.notice.at) || new Date().toISOString(), sentTo: [...done], failed: 0, running: true, lastError: '' }; save();
+  res.json({ ok: 1, total: todo.length, warn: todo.length > 90 ? 'Gmail limite l’envoi à environ 100 mails par jour : les clients restants pourront être prévenus demain avec le même bouton.' : '' });
+  (async () => { for (const e of todo) { const m = noticeMail(e, g[e]); const err = await mail(e, 'Votre dossier a un numéro de suivi', m.text, m.html);
+      if (err) { D.notice.failed++; D.notice.lastError = err; } else D.notice.sentTo.push(e); save(); await new Promise(r => setTimeout(r, 400)); }
+    D.notice.running = false; save(); })().catch(e => { D.notice.running = false; D.notice.lastError = e.message; save(); });
+});
+
 app.post('/api/admin/test-mail', adm, async (_, res) => {
   const to = process.env.ADMIN_EMAIL; if (!to) return res.json({ error: 'ADMIN_EMAIL manquant dans Render' });
   res.json({ to, error: await mail(to, 'Test du site', 'Si tu lis ce message, les mails fonctionnent ✅', tpl('Test réussi ✅', p('Si tu lis ce message, les mails de ton site fonctionnent.'), { st: 'ok' })) });
@@ -313,5 +346,6 @@ app.post('/api/admin/test-mail', adm, async (_, res) => {
 
 (async () => {
   if (UP) { try { const r = await up(['GET', 'djdata']); if (r.result) D = { ...D, ...JSON.parse(r.result) }; console.log('Données chargées depuis Upstash'); } catch (e) { console.error('ERREUR UPSTASH', e.message); } ready = true; }
+  if (assignNums()) { save(); console.log('Numéros de dossier attribués'); }
   console.log('Routes prêtes — fichier complet');
 })();
