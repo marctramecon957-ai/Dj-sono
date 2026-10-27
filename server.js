@@ -1,17 +1,18 @@
 const express = require('express'), fs = require('fs'), crypto = require('crypto'), nodemailer = require('nodemailer');
-console.log('Démarrage… [build dossiers-num v10]');
+console.log('Démarrage… [build cadeaux-codes v12]');
 process.on('uncaughtException', e => console.error('ERREUR FATALE', e));
 process.on('unhandledRejection', e => console.error('ERREUR PROMESSE', e));
 const app = express();
 // Le port est ouvert tout de suite (Render l'exige) ; les routes sont ajoutées ensuite
 app.listen(process.env.PORT || 3000, '0.0.0.0', () => console.log('Serveur ouvert sur le port', process.env.PORT || 3000));
 const path = require('path');
+app.use('/api/stripe/webhook', express.raw({ type: '*/*', limit: '1mb' }));
 app.use(express.json());
 app.use('/api', (_, res, next) => { res.set('Cache-Control', 'no-store'); next(); });
 const IDX = [path.join(__dirname, 'public', 'index.html'), path.join(__dirname, 'index.html')].find(p => fs.existsSync(p));
 app.get('/', (_, res) => res.set('Cache-Control', 'no-store').sendFile(IDX));
 const BUILD = Date.now().toString(36);
-app.get('/api/version', (_, res) => res.json({ build: 'dossiers-num v10', id: BUILD, icones: readIcon('icon-512.png') ? 'fichiers PNG' : 'secours (ajoute les 3 fichiers PNG)' }));
+app.get('/api/version', (_, res) => res.json({ build: 'cadeaux-codes v12', id: BUILD, icones: readIcon('icon-512.png') ? 'fichiers PNG' : 'secours (ajoute les 3 fichiers PNG)' }));
 
 // ---- Application installable (PWA) : icônes, manifeste, service worker ----
 const readIcon = n => { try { return fs.readFileSync(path.join(__dirname, n)); } catch { return null; } };
@@ -61,7 +62,7 @@ let D = { site: { title: 'Sound & Light 03', hero: [] }, contacts: [], calendar:
     mentions: 'Éditeur du site : Sound & Light 03 Sonorisation, entreprise individuelle (auto-entrepreneur).\nResponsable : Nathan Peurton.\nAdresse : 8 Rue Simone Léveillé.\nTéléphone : 06 59 84 39 52 — E-mail : soundlight03@gmail.com\nSIRET : en cours d’attribution.\nHébergement : Render Services, Inc., San Francisco, États-Unis.\nDonnées personnelles : les informations saisies dans les formulaires servent uniquement au traitement de votre demande. Vous pouvez demander leur suppression à tout moment par e-mail. L’inscription à la newsletter est facultative et la désinscription possible sur simple demande.\nCookies : le site n’utilise que des cookies techniques nécessaires à son fonctionnement.',
     cgv: 'Article 1 — Objet : les présentes conditions encadrent les prestations de sonorisation, DJ, éclairage et artifices proposées par Sound & Light 03 Sonorisation.\nArticle 2 — Devis et dossier : tout dossier déposé sur le site est une demande, qui n’est ferme qu’après acceptation par le prestataire.\nArticle 3 — Disponibilité : la prestation est soumise à la disponibilité de la date demandée.\nArticle 4 — Prix et paiement : le prix est celui convenu entre les parties. Le paiement peut être demandé en acompte puis en solde, selon l’accord conclu.\nArticle 5 — Annulation et remboursement : une demande de remboursement peut être faite depuis l’espace de suivi du dossier et est étudiée au cas par cas.\nArticle 6 — Responsabilité : le client fournit un lieu et une alimentation électrique adaptés, et respecte les règles de sécurité en vigueur, notamment pour les artifices.\nArticle 7 — Données personnelles : voir les mentions légales.\nArticle 8 — Droit applicable : droit français.',
     updated: null },
-  newsletter: [], maint: { on: false, until: 0, msg: '' } };
+  newsletter: [], reviews: [], codes: [], gifts: [], giftSale: { on: false, amounts: [30, 50, 100], months: 12 }, maint: { on: false, until: 0, msg: '' } };
 try { D = { ...D, ...JSON.parse(fs.readFileSync(FILE)) }; } catch {}
 // Sauvegarde durable : Upstash Redis (gratuit, HTTPS) si configuré, sinon fichier local
 const UP = process.env.UPSTASH_URL, UT = process.env.UPSTASH_TOKEN;
@@ -162,16 +163,210 @@ app.post('/api/suivi', (req, res) => {
   const code = String(req.body.code || '').trim().toUpperCase();
   const d = D.dossiers.find(x => x.trackCode === code);
   if (!d) return res.status(404).json({ error: 'Code introuvable' });
-  res.json({ dossier: { num: d.num, service: d.service, date: d.date, lastName: d.lastName, status: d.status, total: d.total || null, refund: d.refund || null } });
+  res.json({ dossier: { num: d.num, service: d.service, date: d.date, lastName: d.lastName, status: d.status, total: d.total || null, refund: d.refund || null, pay: { ...payOptions(d), enabled: !!SK() } } });
 });
+// ---- Paiement en ligne : Stripe Checkout (l'argent est versé sur ton compte bancaire via Stripe) ----
+const SK = () => process.env.STRIPE_SECRET_KEY || '';
+const stripe = async (method, url, form) => {
+  const r = await fetch('https://api.stripe.com/v1' + url, { method, headers: { Authorization: 'Bearer ' + SK(), 'Content-Type': 'application/x-www-form-urlencoded' }, body: form ? new URLSearchParams(form).toString() : undefined });
+  const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error((j.error && j.error.message) || ('Stripe ' + r.status)); return j;
+};
+const r2 = n => Math.round(n * 100) / 100;
+const creditOf = d => r2((d.credits || []).reduce((a, c) => a + (+c.amount || 0), 0));
+const payOptions = d => { const price = r2(+d.price || 0), credit = Math.min(creditOf(d), price), net = r2(price - credit), dep = r2(+d.deposit || 0), paid = r2(+d.paidTotal || 0), left = r2(Math.max(0, net - paid));
+  return { price, credit, net, deposit: dep, paid, left, depositDue: dep > 0 && paid < dep && left > 0 ? Math.min(r2(dep - paid), left) : 0, credits: (d.credits || []).map(c => ({ label: c.label, amount: c.amount })) }; };
+const recordPayment = async (d, cents, ref, label) => {
+  if ((d.payments || []).some(p => p.ref === ref)) return false;
+  const amount = cents / 100; d.payments = d.payments || []; d.payments.push({ ref, amount, label, at: new Date().toISOString() });
+  confirmCredits(d); d.paidTotal = Math.round(((+d.paidTotal || 0) + amount) * 100) / 100; d.total = d.paidTotal;
+  const full = d.price > 0 && d.paidTotal >= payOptions(d).net - 0.005; d.status = full || !(d.deposit > 0) ? 'paid' : 'accepted';
+  D.finances.push({ id: crypto.randomUUID(), type: 'revenue', name: d.lastName, amount, date: new Date().toISOString().slice(0, 10), note: 'Stripe — ' + label + ' — ' + d.num });
+  save();
+  const site = (process.env.SITE_URL || '').replace(/\/$/, ''), no = 'R-' + String(ref).slice(-8).toUpperCase();
+  const ticket = rows([['Dossier n°', d.num], ['Reçu n°', no], ['Date', new Date().toLocaleDateString('fr-FR')], ['Prestation', d.service + ' — ' + fd(d.date)], [label, eur(amount)]]) + (d.status === 'paid' ? '' : rows([['Reste à payer', eur(payOptions(d).left)]]));
+  both(d.email, d.phone, 'Paiement reçu — ' + no, `Bonjour ${d.lastName}, paiement de ${eur(amount)} bien reçu (${label}). Reçu ${no}.`,
+    tpl(d.status === 'paid' ? 'Paiement reçu' : 'Acompte reçu', p(`Bonjour ${E(d.lastName)}, merci ! Votre paiement a bien été reçu.`) + ticket, { st: d.status === 'paid' ? 'paid' : 'accepted', sub: 'Reçu n° ' + no, cta: site ? 'Voir mon dossier' : undefined, ctaUrl: site ? site + '/#suivi' : undefined, pre: 'Paiement de ' + eur(amount) + ' bien reçu. Merci !' }));
+  both(process.env.ADMIN_EMAIL, process.env.ADMIN_PHONE, 'Paiement reçu — ' + d.lastName, `${d.lastName} a payé ${eur(amount)} (${label}) pour le dossier ${d.num}.`,
+    tpl('Paiement reçu', p(`<b>${E(d.lastName)}</b> vient de payer en ligne.`) + rows([['Dossier n°', d.num], ['Montant', eur(amount)], ['Type', label], ['Total payé', eur(d.paidTotal)]]), { st: 'paid', sub: d.num }));
+  return true;
+};
+// ---- Codes de réduction et cartes cadeaux ----
+const normCode = c => String(c || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+const genGift = () => { const al = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let c; do { c = 'SL'; const b = crypto.randomBytes(8); for (let k = 0; k < 8; k++) c += al[b[k] % al.length]; } while ((D.gifts || []).some(g => g.code === c)); return c; };
+const prettyGift = c => c.replace(/^(.{2})(.{4})(.{4})$/, '$1-$2-$3');
+const addMonths = (dt, m) => { const x = new Date(dt); x.setMonth(x.getMonth() + m); return x.toISOString(); };
+const today = () => new Date().toISOString().slice(0, 10);
+const giftState = g => g.status === 'used' ? 'used' : g.status === 'cancelled' ? 'cancelled' : g.status === 'pending' ? 'pending' : (g.expires && g.expires.slice(0, 10) < today()) ? 'expired' : 'active';
+const codeProblem = (c, d) => { if (!c || c.active === false) return 'Ce code n’est pas valable.';
+  if (c.expires && c.expires < today()) return 'Ce code a expiré.';
+  if (c.max > 0 && (c.used || 0) >= c.max) return 'Ce code a déjà été utilisé le nombre maximum de fois.';
+  if (c.min > 0 && (+d.price || 0) < c.min) return 'Ce code s’applique à partir de ' + eur(c.min) + '.';
+  if (c.service && c.service !== d.service) return 'Ce code ne s’applique pas à cette prestation.'; return ''; };
+const codeValue = (c, d) => { const price = +d.price || 0; return r2(c.type === 'percent' ? price * Math.min(+c.value, 100) / 100 : Math.min(+c.value, price)); };
+const releaseHolds = () => { const now = Date.now(); for (const g of D.gifts || []) if (g.hold && g.hold.until < now) delete g.hold; };
+const giftAvail = g => giftState(g) === 'active' && !g.hold;
+// crédits "réservés" : on les applique au dossier quand le client lance le paiement, et on les libère s'il abandonne
+const clearPending = d => { d.credits = (d.credits || []).filter(c => !c.pending); for (const g of D.gifts || []) if (g.hold && g.hold.dossier === d.id) delete g.hold; };
+app.post('/api/suivi/code', (req, res) => {
+  const code = String(req.body.code || '').trim().toUpperCase(), d = D.dossiers.find(x => x.trackCode === code); if (!d) return res.status(404).json({ error: 'Dossier introuvable' });
+  if (d.status !== 'accepted') return res.status(400).json({ error: 'Le code est utilisable une fois le dossier accepté.' });
+  if (!(d.price > 0)) return res.status(400).json({ error: 'Le montant du dossier n’est pas encore défini.' });
+  const n = normCode(req.body.promo); if (!n) return res.status(400).json({ error: 'Entrez un code.' });
+  releaseHolds();
+  // un crédit en attente dont la réservation a expiré est retiré ; sinon on refuse un 2e code
+  d.credits = (d.credits || []).filter(c => !(c.pending && c.kind === 'gift' && !(D.gifts || []).some(g => g.id === c.ref && g.hold && g.hold.dossier === d.id)));
+  if ((d.credits || []).length) return res.status(400).json({ error: 'Un code est déjà appliqué à ce dossier. Retirez-le pour en essayer un autre.' });
+  const promo = (D.codes || []).find(c => normCode(c.code) === n);
+  if (promo) {
+    const pb = codeProblem(promo, d); if (pb) return res.status(400).json({ error: pb });
+    const v = codeValue(promo, d); if (!(v > 0)) return res.status(400).json({ error: 'Ce code ne donne aucune réduction.' });
+    d.credits = d.credits || []; d.credits.push({ kind: 'promo', ref: promo.id, label: 'Code ' + promo.code, amount: v, pending: true }); save();
+    return res.json({ ok: 1, message: 'Code appliqué : − ' + eur(v) });
+  }
+  const gift = (D.gifts || []).find(g => g.code === n);
+  if (gift) {
+    const st = giftState(gift); if (st === 'used') return res.status(400).json({ error: 'Cette carte cadeau a déjà été utilisée.' });
+    if (st === 'expired') return res.status(400).json({ error: 'Cette carte cadeau a expiré.' });
+    if (st !== 'active') return res.status(400).json({ error: 'Cette carte cadeau n’est pas valable.' });
+    if (gift.hold && gift.hold.dossier !== d.id) return res.status(400).json({ error: 'Cette carte cadeau est en cours d’utilisation.' });
+    const v = r2(Math.min(gift.amount, +d.price || 0)); gift.hold = { dossier: d.id, until: Date.now() + 30 * 60000 };
+    d.credits = d.credits || []; d.credits.push({ kind: 'gift', ref: gift.id, label: 'Carte cadeau', amount: v, pending: true }); save();
+    return res.json({ ok: 1, message: 'Carte cadeau appliquée : − ' + eur(v) });
+  }
+  res.status(400).json({ error: 'Code inconnu. Vérifiez la saisie.' });
+});
+app.post('/api/suivi/code/retirer', (req, res) => {
+  const code = String(req.body.code || '').trim().toUpperCase(), d = D.dossiers.find(x => x.trackCode === code); if (!d) return res.status(404).json({ error: 'Dossier introuvable' });
+  if ((d.credits || []).some(c => !c.pending)) return res.status(400).json({ error: 'Ce code a déjà été utilisé pour un paiement.' }); clearPending(d); save(); res.json({ ok: 1 });
+});
+// quand un paiement Stripe est confirmé : on valide les crédits réservés (le code est consommé)
+const confirmCredits = d => { let ch = false;
+  for (const c of d.credits || []) if (c.pending) { delete c.pending; ch = true;
+    if (c.kind === 'promo') { const p = (D.codes || []).find(x => x.id === c.ref); if (p) p.used = (p.used || 0) + 1; }
+    if (c.kind === 'gift') { const g = (D.gifts || []).find(x => x.id === c.ref); if (g) { g.status = 'used'; g.usedAt = new Date().toISOString(); g.usedFor = d.num; delete g.hold; } } }
+  return ch; };
+// dossier entièrement couvert par un code ou une carte (rien à payer par carte bancaire)
+app.post('/api/suivi/valider-credit', async (req, res) => {
+  const code = String(req.body.code || '').trim().toUpperCase(), d = D.dossiers.find(x => x.trackCode === code); if (!d) return res.status(404).json({ error: 'Dossier introuvable' });
+  if (d.status !== 'accepted') return res.status(400).json({ error: 'Dossier non disponible' });
+  const o = payOptions(d); if (o.left > 0.005 || !(o.price > 0) || !(d.credits || []).length) return res.status(400).json({ error: 'Il reste un montant à payer.' });
+  confirmCredits(d); d.status = 'paid'; d.total = o.price; d.paidTotal = d.paidTotal || 0; save();
+  D.finances.push({ id: crypto.randomUUID(), type: 'revenue', name: d.lastName, amount: 0, date: today(), note: 'Dossier couvert par ' + d.credits.map(c => c.label).join(' + ') + ' — ' + d.num }); save();
+  both(d.email, d.phone, 'Dossier confirmé — ' + d.num, `Bonjour ${d.lastName}, votre dossier ${d.num} est réglé grâce à votre code.`, tpl('Dossier réglé', p(`Bonjour ${E(d.lastName)}, votre dossier est entièrement réglé.`) + rows([['Dossier n°', d.num], ['Prestation', d.service + ' — ' + fd(d.date)], ['Réglé par', d.credits.map(c => c.label).join(' + ')]]), { st: 'paid', sub: d.num }));
+  res.json({ ok: 1 });
+});
+app.get('/api/suivi/paiement-info', (req, res) => res.json({ enabled: !!SK() }));
 app.post('/api/suivi/paiement', async (req, res) => {
   const code = String(req.body.code || '').trim().toUpperCase();
   const d = D.dossiers.find(x => x.trackCode === code); if (!d) return res.status(404).json({ error: 'Code introuvable' });
   if (d.status !== 'accepted') return res.status(400).json({ error: 'Le paiement n’est pas disponible pour ce dossier' });
-  // Simulation de paiement (à remplacer par Stripe) : marque payé immédiatement
-  d.status = 'paid'; d.total = d.total || (+d.budgetMin || 0); save();
-  res.json({ ok: 1 });
+  if (!SK()) return res.status(503).json({ error: 'Le paiement en ligne n’est pas encore activé. Contactez-nous pour régler.' });
+  releaseHolds(); const o = payOptions(d); if (!(o.price > 0)) return res.status(400).json({ error: 'Le montant de votre dossier n’est pas encore défini. Nous vous contactons très vite.' });
+  if (o.left <= 0.005 && o.credit > 0) return res.status(400).json({ error: 'Votre dossier est couvert par votre code : validez-le sans paiement.' });
+  const kind = req.body.kind === 'deposit' && o.depositDue > 0 ? 'deposit' : 'balance', amount = kind === 'deposit' ? o.depositDue : o.left;
+  if (!(amount >= 0.5)) return res.status(400).json({ error: 'Rien à payer pour ce dossier.' });
+  const label = kind === 'deposit' ? 'Acompte' : (o.paid > 0 ? 'Solde' : 'Paiement'), site = (process.env.SITE_URL || (req.headers.origin || '')).replace(/\/$/, '');
+  if (!site) return res.status(500).json({ error: 'SITE_URL manquant dans Render' });
+  try {
+    const f = { mode: 'payment', 'line_items[0][quantity]': '1', 'line_items[0][price_data][currency]': 'eur', 'line_items[0][price_data][unit_amount]': String(Math.round(amount * 100)),
+      'line_items[0][price_data][product_data][name]': label + ' — ' + d.service + ' le ' + fd(d.date) + ' (' + d.num + ')', client_reference_id: d.id, 'metadata[dossier]': d.id, 'metadata[label]': label, 'metadata[credits]': String(o.credit),
+      success_url: site + '/?paiement=ok#suivi', cancel_url: site + '/?paiement=annule#suivi', 'payment_intent_data[metadata][dossier]': d.id, 'payment_intent_data[metadata][label]': label };
+    if (/^\S+@\S+\.\S+$/.test(d.email)) f.customer_email = d.email;
+    for (const c of d.credits || []) if (c.kind === 'gift' && c.pending) { const g = (D.gifts || []).find(x => x.id === c.ref); if (g) g.hold = { dossier: d.id, until: Date.now() + 60 * 60000 }; } save();
+    const s2 = await stripe('POST', '/checkout/sessions', f); res.json({ url: s2.url });
+  } catch (e) { console.error('ERREUR STRIPE', e.message); res.status(502).json({ error: 'Impossible de lancer le paiement : ' + e.message }); }
 });
+// Stripe prévient le serveur quand un paiement est réellement encaissé (signature vérifiée)
+app.post('/api/stripe/webhook', async (req, res) => {
+  const secret = process.env.STRIPE_WEBHOOK_SECRET; if (!secret) return res.status(503).send('webhook non configuré');
+  try {
+    const raw = Buffer.isBuffer(req.body) ? req.body : Buffer.from(typeof req.body === 'string' ? req.body : JSON.stringify(req.body || {})), sh = String(req.headers['stripe-signature'] || '');
+    const t = (/t=(\d+)/.exec(sh) || [])[1], sigs = [...sh.matchAll(/v1=([a-f0-9]+)/g)].map(m => m[1]);
+    const exp = crypto.createHmac('sha256', secret).update(t + '.' + raw.toString('utf8')).digest('hex');
+    const ok = t && Math.abs(Date.now() / 1000 - +t) < 600 && sigs.some(x => x.length === exp.length && crypto.timingSafeEqual(Buffer.from(x), Buffer.from(exp)));
+    if (!ok) return res.status(400).send('signature invalide');
+    const ev = JSON.parse(raw.toString('utf8')), o = ev.data && ev.data.object;
+    if (ev.type === 'checkout.session.completed' && o && o.payment_status === 'paid') {
+      const d = (o.metadata && o.metadata.gift) ? null : D.dossiers.find(x => x.id === (o.metadata && o.metadata.dossier || o.client_reference_id));
+      if (d) await recordPayment(d, o.amount_total, o.payment_intent || o.id, (o.metadata && o.metadata.label) || 'Paiement');
+      if (o.metadata && o.metadata.gift) await activateGift(o.metadata.gift, o.payment_intent || o.id);
+    }
+    res.json({ received: true });
+  } catch (e) { console.error('ERREUR WEBHOOK', e.message); res.status(400).send('erreur'); }
+});
+// Retour du client après paiement : on vérifie auprès de Stripe (au cas où le webhook tarde)
+app.post('/api/suivi/verifier', async (req, res) => {
+  const code = String(req.body.code || '').trim().toUpperCase(), d = D.dossiers.find(x => x.trackCode === code); if (!d || !SK()) return res.json({ ok: 0 });
+  try { const l = await stripe('GET', '/checkout/sessions?limit=10&payment_intent_data=&client_reference_id=' + encodeURIComponent(d.id)).catch(() => null);
+    const arr = (l && l.data) || []; for (const o of arr) if (o.payment_status === 'paid' && !(o.metadata && o.metadata.gift)) await recordPayment(d, o.amount_total, o.payment_intent || o.id, (o.metadata && o.metadata.label) || 'Paiement');
+  } catch {} res.json({ ok: 1 });
+});
+// Admin : fixer le prix et l'acompte d'un dossier
+app.post('/api/admin/prix/:id', adm, (req, res) => {
+  const d = D.dossiers.find(x => x.id === req.params.id); if (!d) return res.status(404).json({ error: 'Introuvable' });
+  const price = +req.body.price, dep = +req.body.deposit || 0;
+  if (!(price >= 0) || !(dep >= 0) || dep > price) return res.status(400).json({ error: 'Montants invalides (l’acompte ne peut pas dépasser le prix)' });
+  d.price = Math.round(price * 100) / 100; d.deposit = Math.round(dep * 100) / 100; save(); res.json({ ok: 1 });
+});
+// ---- Vente de cartes cadeaux en ligne (désactivée tant que tu ne l'actives pas dans l'admin) ----
+const giftSaleInfo = () => { const g = D.giftSale || {}; return { on: !!g.on && !!SK(), amounts: (g.amounts || []).slice(0, 8), months: g.months || 12 }; };
+const giftMail = (g, to, buyer) => {
+  const site = (process.env.SITE_URL || '').replace(/\/$/, ''), exp = g.expires ? fd(g.expires.slice(0, 10)) : '';
+  const rowsH = rows([['Montant', eur(g.amount)], ['Code', prettyGift(g.code)], ['Valable jusqu’au', exp], ['Utilisation', 'Une seule fois, sur toute prestation']]);
+  const html = tpl('Une carte cadeau pour vous', p('Bonjour,') + p((g.from ? E(g.from) + ' vous offre' : 'Vous avez reçu') + ' une carte cadeau <b>Sound &amp; Light</b> à utiliser pour votre prochaine soirée.') + (g.message ? p('« ' + E(g.message) + ' »') : '') + rowsH + p('<span style="font-size:13px">Pour l’utiliser : déposez un dossier sur notre site, puis entrez ce code dans « Suivi de dossier » avant de payer.</span>'),
+    { sub: eur(g.amount) + ' à valoir sur votre soirée', cta: site ? 'Déposer un dossier' : undefined, ctaUrl: site ? site + '/#dossier' : undefined, pre: 'Votre carte cadeau de ' + eur(g.amount) + ' est arrivée.' });
+  const text = `Vous avez reçu une carte cadeau Sound & Light de ${eur(g.amount)}.\nCode : ${prettyGift(g.code)}\nValable jusqu'au ${exp}. Utilisable une seule fois.` + (g.message ? `\n"${g.message}"` : '') + (site ? `\n${site}` : '');
+  return mail(to, 'Votre carte cadeau Sound & Light', text, html); };
+app.post('/api/cadeau/acheter', async (req, res) => {
+  const gs = giftSaleInfo(); if (!gs.on) return res.status(503).json({ error: 'La vente de cartes cadeaux n’est pas ouverte pour le moment.' });
+  const amount = +req.body.amount; if (!gs.amounts.includes(amount)) return res.status(400).json({ error: 'Montant non proposé.' });
+  const buyer = String(req.body.buyerEmail || '').trim().toLowerCase(), to = String(req.body.toEmail || buyer).trim().toLowerCase(), re = /^\S+@\S+\.\S+$/;
+  if (!re.test(buyer) || !re.test(to)) return res.status(400).json({ error: 'Adresse e-mail invalide.' });
+  const site = (process.env.SITE_URL || '').replace(/\/$/, ''); if (!site) return res.status(500).json({ error: 'SITE_URL manquant dans Render' });
+  const g = { id: crypto.randomUUID(), code: genGift(), amount, status: 'pending', from: String(req.body.from || '').trim().slice(0, 60), message: String(req.body.message || '').trim().slice(0, 300), to, buyer, created: new Date().toISOString(), months: gs.months, source: 'web' };
+  D.gifts.unshift(g); save();
+  try { const f = { mode: 'payment', 'line_items[0][quantity]': '1', 'line_items[0][price_data][currency]': 'eur', 'line_items[0][price_data][unit_amount]': String(Math.round(amount * 100)), 'line_items[0][price_data][product_data][name]': 'Carte cadeau Sound & Light — ' + eur(amount),
+      client_reference_id: g.id, 'metadata[gift]': g.id, 'metadata[label]': 'Carte cadeau', success_url: site + '/?cadeau=ok#cadeau', cancel_url: site + '/?cadeau=annule#cadeau', customer_email: buyer };
+    const s2 = await stripe('POST', '/checkout/sessions', f); res.json({ url: s2.url });
+  } catch (e) { D.gifts = D.gifts.filter(x => x.id !== g.id); save(); console.error('ERREUR STRIPE', e.message); res.status(502).json({ error: 'Impossible de lancer le paiement : ' + e.message }); }
+});
+const activateGift = async (id, ref) => { const g = (D.gifts || []).find(x => x.id === id); if (!g || g.status !== 'pending') return false;
+  g.status = 'active'; g.paidRef = ref; g.activated = new Date().toISOString(); g.expires = addMonths(g.activated, g.months || 12);
+  D.finances.push({ id: crypto.randomUUID(), type: 'revenue', name: 'Carte cadeau', amount: g.amount, date: today(), note: 'Stripe — carte cadeau ' + prettyGift(g.code) }); save();
+  await giftMail(g, g.to, g.buyer);
+  if (g.buyer && g.buyer !== g.to) both(g.buyer, null, 'Votre achat de carte cadeau', `Votre carte cadeau de ${eur(g.amount)} a été envoyée à ${g.to}.`, tpl('Carte cadeau envoyée', p('Merci pour votre achat ! La carte cadeau a bien été envoyée à son destinataire.') + rows([['Montant', eur(g.amount)], ['Envoyée à', g.to]]), { st: 'paid', sub: eur(g.amount) }));
+  both(process.env.ADMIN_EMAIL, null, 'Carte cadeau vendue', `Carte cadeau de ${eur(g.amount)} vendue.`, tpl('Carte cadeau vendue', rows([['Montant', eur(g.amount)], ['Code', prettyGift(g.code)], ['Acheteur', g.buyer]]), { st: 'admin' }));
+  return true; };
+app.post('/api/cadeau/verifier', async (req, res) => { try { if (!SK()) return res.json({ ok: 0 });
+  const l = await stripe('GET', '/checkout/sessions?limit=20'); for (const o of (l.data || [])) if (o.payment_status === 'paid' && o.metadata && o.metadata.gift) await activateGift(o.metadata.gift, o.payment_intent || o.id); } catch {} res.json({ ok: 1 }); });
+// --- Admin : codes de réduction
+app.get('/api/admin/codes', adm, (_, res) => { releaseHolds(); res.json({ codes: D.codes || [], gifts: (D.gifts || []).map(g => ({ ...g, state: giftState(g), hold: undefined })), giftSale: D.giftSale, stripe: !!SK() }); });
+app.post('/api/admin/codes', adm, (req, res) => {
+  const b = req.body, code = normCode(b.code) || ('PROMO' + crypto.randomBytes(2).toString('hex').toUpperCase()), type = b.type === 'percent' ? 'percent' : 'amount', value = +b.value;
+  if (!(value > 0) || (type === 'percent' && value > 100)) return res.status(400).json({ error: type === 'percent' ? 'Le pourcentage doit être entre 1 et 100.' : 'Le montant doit être supérieur à 0.' });
+  if ((D.codes || []).some(c => normCode(c.code) === code) || (D.gifts || []).some(g => g.code === code)) return res.status(400).json({ error: 'Ce code existe déjà.' });
+  const exp = /^\d{4}-\d{2}-\d{2}$/.test(String(b.expires || '')) ? b.expires : '';
+  D.codes = D.codes || []; D.codes.unshift({ id: crypto.randomUUID(), code, type, value, expires: exp, max: Math.max(0, Math.floor(+b.max || 0)), min: Math.max(0, +b.min || 0), service: ['DJ', 'Artificier', 'Lighter'].includes(b.service) ? b.service : '', used: 0, active: true, created: new Date().toISOString() }); save(); res.json({ ok: 1, code });
+});
+app.post('/api/admin/codes/:id', adm, (req, res) => { const c = (D.codes || []).find(x => x.id === req.params.id); if (!c) return res.status(404).json({ error: 'Introuvable' });
+  if (req.body.delete) D.codes = D.codes.filter(x => x.id !== c.id); else if (typeof req.body.active === 'boolean') c.active = req.body.active; save(); res.json({ ok: 1 }); });
+// --- Admin : cartes cadeaux
+app.post('/api/admin/cadeaux', adm, async (req, res) => {
+  const amount = +req.body.amount, months = Math.min(Math.max(Math.floor(+req.body.months) || 12, 1), 60), email = String(req.body.email || '').trim().toLowerCase();
+  if (!(amount >= 1 && amount <= 5000)) return res.status(400).json({ error: 'Montant invalide (entre 1 et 5000 €).' });
+  if (email && !/^\S+@\S+\.\S+$/.test(email)) return res.status(400).json({ error: 'Adresse e-mail invalide.' });
+  const now = new Date().toISOString(), g = { id: crypto.randomUUID(), code: genGift(), amount, status: 'active', from: String(req.body.from || '').trim().slice(0, 60), message: String(req.body.message || '').trim().slice(0, 300), to: email, created: now, activated: now, expires: addMonths(now, months), months, source: 'admin' };
+  D.gifts.unshift(g); save(); let sent = false, err = '';
+  if (email) { err = await giftMail(g, email) || ''; sent = !err; }
+  res.json({ ok: 1, code: prettyGift(g.code), sent, error: err || undefined });
+});
+app.post('/api/admin/cadeaux/:id', adm, async (req, res) => { const g = (D.gifts || []).find(x => x.id === req.params.id); if (!g) return res.status(404).json({ error: 'Introuvable' });
+  if (req.body.cancel) g.status = 'cancelled'; else if (req.body.delete && g.status !== 'active') D.gifts = D.gifts.filter(x => x.id !== g.id);
+  else if (req.body.resend && g.to) { const err = await giftMail(g, g.to); save(); return res.json(err ? { error: err } : { ok: 1 }); }
+  save(); res.json({ ok: 1 }); });
+app.post('/api/admin/cadeaux-vente', adm, (req, res) => { const a = (Array.isArray(req.body.amounts) ? req.body.amounts : []).map(Number).filter(n => n >= 5 && n <= 5000).slice(0, 8);
+  D.giftSale = { on: !!req.body.on, amounts: a.length ? a : [30, 50, 100], months: Math.min(Math.max(Math.floor(+req.body.months) || 12, 1), 60) }; save(); res.json({ ok: 1 }); });
+
 app.post('/api/suivi/remboursement', async (req, res) => {
   const code = String(req.body.code || '').trim().toUpperCase();
   const d = D.dossiers.find(x => x.trackCode === code); if (!d) return res.status(404).json({ error: 'Code introuvable' });
@@ -183,9 +378,35 @@ app.post('/api/suivi/remboursement', async (req, res) => {
   res.json({ ok: 1 });
 });
 
+// ---- Avis clients (publiés après validation par l'admin) ----
+const initials = n => String(n || '?').trim().slice(0, 1).toUpperCase();
+const reviewsPublic = () => { const ok = (D.reviews || []).filter(r => r.status === 'approved').sort((a, b) => String(b.at).localeCompare(String(a.at)));
+  const avg = ok.length ? Math.round(ok.reduce((a, r) => a + r.rating, 0) / ok.length * 10) / 10 : 0;
+  return { avg, count: ok.length, list: ok.slice(0, 30).map(r => ({ name: r.name, service: r.service, rating: r.rating, text: r.text, at: r.at, reply: r.reply || '' })) }; };
+app.post('/api/suivi/avis', (req, res) => {
+  const code = String(req.body.code || '').trim().toUpperCase(), d = D.dossiers.find(x => x.trackCode === code); if (!d) return res.status(404).json({ error: 'Code introuvable' });
+  if (!['paid', 'accepted'].includes(d.status)) return res.status(400).json({ error: 'L’avis est possible une fois le dossier accepté.' });
+  if (d.date > new Date().toISOString().slice(0, 10)) return res.status(400).json({ error: 'Vous pourrez laisser votre avis après la date de la prestation.' });
+  if ((D.reviews || []).some(r => r.dossier === d.id)) return res.status(409).json({ error: 'Vous avez déjà laissé un avis pour ce dossier. Merci !' });
+  const rating = Math.round(+req.body.rating), text = String(req.body.text || '').trim().slice(0, 800);
+  if (!(rating >= 1 && rating <= 5)) return res.status(400).json({ error: 'Choisissez une note de 1 à 5 étoiles.' });
+  if (text.length < 5) return res.status(400).json({ error: 'Écrivez quelques mots pour votre avis.' });
+  D.reviews = D.reviews || []; D.reviews.unshift({ id: crypto.randomUUID(), dossier: d.id, name: d.lastName, service: d.service, rating, text, status: 'pending', at: new Date().toISOString() }); save();
+  both(process.env.ADMIN_EMAIL, null, 'Nouvel avis client — ' + d.lastName, `${d.lastName} a laissé un avis ${rating}/5 : ${text}`,
+    tpl('Nouvel avis client', p(`<b>${E(d.lastName)}</b> a laissé un avis <b>${rating}/5</b>.`) + p('« ' + E(text) + ' »') + p('Il sera publié après ta validation dans l’espace admin.'), { st: 'admin', sub: d.num, cta: 'Ouvrir l’espace admin' }));
+  res.json({ ok: 1 });
+});
+app.get('/api/admin/avis', adm, (_, res) => res.json({ reviews: D.reviews || [] }));
+app.post('/api/admin/avis/:id', adm, (req, res) => {
+  const r = (D.reviews || []).find(x => x.id === req.params.id); if (!r) return res.status(404).json({ error: 'Introuvable' });
+  if (req.body.delete) D.reviews = D.reviews.filter(x => x.id !== r.id);
+  else { if (['approved', 'pending', 'hidden'].includes(req.body.status)) r.status = req.body.status; if (typeof req.body.reply === 'string') r.reply = req.body.reply.slice(0, 400); }
+  save(); res.json({ ok: 1 });
+});
+
 // ---- Public ----
 const svc = () => ({ DJ: true, Artificier: true, Lighter: true, ...(D.site.services || {}) });
-app.get('/api/public', (_, res) => res.json({ site: { ...D.site, services: svc() }, contacts: D.contacts, calendar: D.calendar, legal: D.legal, upload: { cloud: process.env.CLOUDINARY_CLOUD || '', preset: process.env.CLOUDINARY_PRESET || '' } }));
+app.get('/api/public', (_, res) => res.json({ site: { ...D.site, services: svc() }, contacts: D.contacts, calendar: D.calendar, legal: D.legal, reviews: reviewsPublic(), giftSale: giftSaleInfo(), upload: { cloud: process.env.CLOUDINARY_CLOUD || '', preset: process.env.CLOUDINARY_PRESET || '' } }));
 
 // ---- Newsletter ----
 app.post('/api/newsletter', (req, res) => {
