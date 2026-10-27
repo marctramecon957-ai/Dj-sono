@@ -1,5 +1,5 @@
 const express = require('express'), fs = require('fs'), crypto = require('crypto'), nodemailer = require('nodemailer');
-console.log('Démarrage… [build cadeaux-codes v12]');
+console.log('Démarrage… [build lieux v14]');
 process.on('uncaughtException', e => console.error('ERREUR FATALE', e));
 process.on('unhandledRejection', e => console.error('ERREUR PROMESSE', e));
 const app = express();
@@ -12,7 +12,7 @@ app.use('/api', (_, res, next) => { res.set('Cache-Control', 'no-store'); next()
 const IDX = [path.join(__dirname, 'public', 'index.html'), path.join(__dirname, 'index.html')].find(p => fs.existsSync(p));
 app.get('/', (_, res) => res.set('Cache-Control', 'no-store').sendFile(IDX));
 const BUILD = Date.now().toString(36);
-app.get('/api/version', (_, res) => res.json({ build: 'cadeaux-codes v12', id: BUILD, icones: readIcon('icon-512.png') ? 'fichiers PNG' : 'secours (ajoute les 3 fichiers PNG)' }));
+app.get('/api/version', (_, res) => res.json({ build: 'lieux v14', id: BUILD, icones: readIcon('icon-512.png') ? 'fichiers PNG' : 'secours (ajoute les 3 fichiers PNG)' }));
 
 // ---- Application installable (PWA) : icônes, manifeste, service worker ----
 const readIcon = n => { try { return fs.readFileSync(path.join(__dirname, n)); } catch { return null; } };
@@ -62,7 +62,7 @@ let D = { site: { title: 'Sound & Light 03', hero: [] }, contacts: [], calendar:
     mentions: 'Éditeur du site : Sound & Light 03 Sonorisation, entreprise individuelle (auto-entrepreneur).\nResponsable : Nathan Peurton.\nAdresse : 8 Rue Simone Léveillé.\nTéléphone : 06 59 84 39 52 — E-mail : soundlight03@gmail.com\nSIRET : en cours d’attribution.\nHébergement : Render Services, Inc., San Francisco, États-Unis.\nDonnées personnelles : les informations saisies dans les formulaires servent uniquement au traitement de votre demande. Vous pouvez demander leur suppression à tout moment par e-mail. L’inscription à la newsletter est facultative et la désinscription possible sur simple demande.\nCookies : le site n’utilise que des cookies techniques nécessaires à son fonctionnement.',
     cgv: 'Article 1 — Objet : les présentes conditions encadrent les prestations de sonorisation, DJ, éclairage et artifices proposées par Sound & Light 03 Sonorisation.\nArticle 2 — Devis et dossier : tout dossier déposé sur le site est une demande, qui n’est ferme qu’après acceptation par le prestataire.\nArticle 3 — Disponibilité : la prestation est soumise à la disponibilité de la date demandée.\nArticle 4 — Prix et paiement : le prix est celui convenu entre les parties. Le paiement peut être demandé en acompte puis en solde, selon l’accord conclu.\nArticle 5 — Annulation et remboursement : une demande de remboursement peut être faite depuis l’espace de suivi du dossier et est étudiée au cas par cas.\nArticle 6 — Responsabilité : le client fournit un lieu et une alimentation électrique adaptés, et respecte les règles de sécurité en vigueur, notamment pour les artifices.\nArticle 7 — Données personnelles : voir les mentions légales.\nArticle 8 — Droit applicable : droit français.',
     updated: null },
-  newsletter: [], reviews: [], codes: [], gifts: [], giftSale: { on: false, amounts: [30, 50, 100], months: 12 }, maint: { on: false, until: 0, msg: '' } };
+  newsletter: [], reviews: [], locations: ['Moulins', 'Saint-Étienne'], codes: [], gifts: [], giftSale: { on: false, amounts: [30, 50, 100], months: 12 }, maint: { on: false, until: 0, msg: '' } };
 try { D = { ...D, ...JSON.parse(fs.readFileSync(FILE)) }; } catch {}
 // Sauvegarde durable : Upstash Redis (gratuit, HTTPS) si configuré, sinon fichier local
 const UP = process.env.UPSTASH_URL, UT = process.env.UPSTASH_TOKEN;
@@ -163,7 +163,7 @@ app.post('/api/suivi', (req, res) => {
   const code = String(req.body.code || '').trim().toUpperCase();
   const d = D.dossiers.find(x => x.trackCode === code);
   if (!d) return res.status(404).json({ error: 'Code introuvable' });
-  res.json({ dossier: { num: d.num, service: d.service, date: d.date, lastName: d.lastName, status: d.status, total: d.total || null, refund: d.refund || null, pay: { ...payOptions(d), enabled: !!SK() } } });
+  res.json({ dossier: { num: d.num, service: d.service, date: d.date, city: d.city || '', lastName: d.lastName, status: d.status, total: d.total || null, refund: d.refund || null, pay: { ...payOptions(d), enabled: !!SK() } } });
 });
 // ---- Paiement en ligne : Stripe Checkout (l'argent est versé sur ton compte bancaire via Stripe) ----
 const SK = () => process.env.STRIPE_SECRET_KEY || '';
@@ -183,7 +183,7 @@ const recordPayment = async (d, cents, ref, label) => {
   D.finances.push({ id: crypto.randomUUID(), type: 'revenue', name: d.lastName, amount, date: new Date().toISOString().slice(0, 10), note: 'Stripe — ' + label + ' — ' + d.num });
   save();
   const site = (process.env.SITE_URL || '').replace(/\/$/, ''), no = 'R-' + String(ref).slice(-8).toUpperCase();
-  const ticket = rows([['Dossier n°', d.num], ['Reçu n°', no], ['Date', new Date().toLocaleDateString('fr-FR')], ['Prestation', d.service + ' — ' + fd(d.date)], [label, eur(amount)]]) + (d.status === 'paid' ? '' : rows([['Reste à payer', eur(payOptions(d).left)]]));
+  const ticket = rows([['Dossier n°', d.num], ['Reçu n°', no], ['Date', new Date().toLocaleDateString('fr-FR')], ['Prestation', d.service + ' — ' + fd(d.date) + (d.city ? ' — ' + d.city : '')], [label, eur(amount)]]) + (d.status === 'paid' ? '' : rows([['Reste à payer', eur(payOptions(d).left)]]));
   both(d.email, d.phone, 'Paiement reçu — ' + no, `Bonjour ${d.lastName}, paiement de ${eur(amount)} bien reçu (${label}). Reçu ${no}.`,
     tpl(d.status === 'paid' ? 'Paiement reçu' : 'Acompte reçu', p(`Bonjour ${E(d.lastName)}, merci ! Votre paiement a bien été reçu.`) + ticket, { st: d.status === 'paid' ? 'paid' : 'accepted', sub: 'Reçu n° ' + no, cta: site ? 'Voir mon dossier' : undefined, ctaUrl: site ? site + '/#suivi' : undefined, pre: 'Paiement de ' + eur(amount) + ' bien reçu. Merci !' }));
   both(process.env.ADMIN_EMAIL, process.env.ADMIN_PHONE, 'Paiement reçu — ' + d.lastName, `${d.lastName} a payé ${eur(amount)} (${label}) pour le dossier ${d.num}.`,
@@ -252,7 +252,7 @@ app.post('/api/suivi/valider-credit', async (req, res) => {
   const o = payOptions(d); if (o.left > 0.005 || !(o.price > 0) || !(d.credits || []).length) return res.status(400).json({ error: 'Il reste un montant à payer.' });
   confirmCredits(d); d.status = 'paid'; d.total = o.price; d.paidTotal = d.paidTotal || 0; save();
   D.finances.push({ id: crypto.randomUUID(), type: 'revenue', name: d.lastName, amount: 0, date: today(), note: 'Dossier couvert par ' + d.credits.map(c => c.label).join(' + ') + ' — ' + d.num }); save();
-  both(d.email, d.phone, 'Dossier confirmé — ' + d.num, `Bonjour ${d.lastName}, votre dossier ${d.num} est réglé grâce à votre code.`, tpl('Dossier réglé', p(`Bonjour ${E(d.lastName)}, votre dossier est entièrement réglé.`) + rows([['Dossier n°', d.num], ['Prestation', d.service + ' — ' + fd(d.date)], ['Réglé par', d.credits.map(c => c.label).join(' + ')]]), { st: 'paid', sub: d.num }));
+  both(d.email, d.phone, 'Dossier confirmé — ' + d.num, `Bonjour ${d.lastName}, votre dossier ${d.num} est réglé grâce à votre code.`, tpl('Dossier réglé', p(`Bonjour ${E(d.lastName)}, votre dossier est entièrement réglé.`) + rows([['Dossier n°', d.num], ['Prestation', d.service + ' — ' + fd(d.date) + (d.city ? ' — ' + d.city : '')], ['Réglé par', d.credits.map(c => c.label).join(' + ')]]), { st: 'paid', sub: d.num }));
   res.json({ ok: 1 });
 });
 app.get('/api/suivi/paiement-info', (req, res) => res.json({ enabled: !!SK() }));
@@ -378,6 +378,12 @@ app.post('/api/suivi/remboursement', async (req, res) => {
   res.json({ ok: 1 });
 });
 
+// ---- Localisations (villes d'intervention) ----
+app.post('/api/admin/lieux', adm, (req, res) => {
+  const list = [...new Set((Array.isArray(req.body.locations) ? req.body.locations : []).map(x => String(x || '').trim().slice(0, 40)).filter(x => x.length >= 2))].slice(0, 12);
+  if (!list.length) return res.status(400).json({ error: 'Il faut au moins une localisation.' });
+  D.locations = list; save(); res.json({ ok: 1, locations: list });
+});
 // ---- Avis clients (publiés après validation par l'admin) ----
 const initials = n => String(n || '?').trim().slice(0, 1).toUpperCase();
 const reviewsPublic = () => { const ok = (D.reviews || []).filter(r => r.status === 'approved').sort((a, b) => String(b.at).localeCompare(String(a.at)));
@@ -406,7 +412,7 @@ app.post('/api/admin/avis/:id', adm, (req, res) => {
 
 // ---- Public ----
 const svc = () => ({ DJ: true, Artificier: true, Lighter: true, ...(D.site.services || {}) });
-app.get('/api/public', (_, res) => res.json({ site: { ...D.site, services: svc() }, contacts: D.contacts, calendar: D.calendar, legal: D.legal, reviews: reviewsPublic(), giftSale: giftSaleInfo(), upload: { cloud: process.env.CLOUDINARY_CLOUD || '', preset: process.env.CLOUDINARY_PRESET || '' } }));
+app.get('/api/public', (_, res) => res.json({ site: { ...D.site, services: svc() }, contacts: D.contacts, calendar: D.calendar, legal: D.legal, reviews: reviewsPublic(), locations: D.locations, giftSale: giftSaleInfo(), upload: { cloud: process.env.CLOUDINARY_CLOUD || '', preset: process.env.CLOUDINARY_PRESET || '' } }));
 
 // ---- Newsletter ----
 app.post('/api/newsletter', (req, res) => {
@@ -429,16 +435,16 @@ app.post('/api/newsletter/desinscription', (req, res) => {
 app.post('/api/dossier', async (req, res) => {
   const b = req.body, s = String;
   const d = { id: crypto.randomUUID(), trackCode: genCode(), num: nextNum(String(new Date().getFullYear())), created: new Date().toISOString(), service: s(b.service).slice(0, 20), date: s(b.date), lastName: s(b.lastName).slice(0, 60),
-    budgetMin: +b.budgetMin, budgetMax: +b.budgetMax, email: s(b.email).slice(0, 120), phone: s(b.phone).slice(0, 30), address: s(b.address).slice(0, 200) };
-  if (!['DJ', 'Artificier', 'Lighter'].includes(d.service) || svc()[d.service] === false || !/^\d{4}-\d{2}-\d{2}$/.test(d.date) || !d.lastName || !d.email || !d.phone || !d.address || !(d.budgetMax >= d.budgetMin))
+    budgetMin: +b.budgetMin, budgetMax: +b.budgetMax, email: s(b.email).slice(0, 120), phone: s(b.phone).slice(0, 30), address: s(b.address).slice(0, 200), city: s(b.city || '').trim().slice(0, 40) };
+  if (!['DJ', 'Artificier', 'Lighter'].includes(d.service) || svc()[d.service] === false || !/^\d{4}-\d{2}-\d{2}$/.test(d.date) || !d.lastName || !d.email || !d.phone || !d.address || !(d.budgetMax >= d.budgetMin) || (d.city && !D.locations.includes(d.city)))
     return res.status(400).json({ error: 'Formulaire incomplet ou invalide' });
   const busy = D.calendar[d.date];
   d.status = busy ? 'refused' : 'pending';
   D.dossiers.unshift(d); save();
   const resume = `${d.service} le ${fd(d.date)} — ${d.lastName}\nBudget : ${d.budgetMin}–${d.budgetMax} €\nLieu : ${d.address}\nTel : ${d.phone} / ${d.email}\nVotre code de suivi : ${d.trackCode}`;
   const budget = eur(d.budgetMin) + ' – ' + eur(d.budgetMax);
-  const summary = card(rows([['Dossier n°', d.num], ['Prestation', d.service], ['Date', fd(d.date)], ['Lieu', d.address], ['Budget', budget]]));
-  const full = card(rows([['Dossier n°', d.num], ['Prestation', d.service], ['Date', fd(d.date)], ['Nom', d.lastName], ['Budget', budget], ['Lieu', d.address], ['Téléphone', d.phone], ['E-mail', d.email]]));
+  const summary = card(rows([['Dossier n°', d.num], ['Prestation', d.service], ['Date', fd(d.date)], ...(d.city ? [['Localisation', d.city]] : []), ['Lieu', d.address], ['Budget', budget]]));
+  const full = card(rows([['Dossier n°', d.num], ['Prestation', d.service], ['Date', fd(d.date)], ['Nom', d.lastName], ['Budget', budget], ...(d.city ? [['Localisation', d.city]] : []), ['Lieu', d.address], ['Téléphone', d.phone], ['E-mail', d.email]]));
   const codeBox = card(rows([['Dossier n°', d.num], ['Code de suivi', d.trackCode]]));
   const site = process.env.SITE_URL || '';
   both(process.env.ADMIN_EMAIL, process.env.ADMIN_PHONE, `Nouveau dossier ${d.lastName}`, `Nouveau dossier${busy ? ' (date indisponible)' : ''}\n${resume}`,
@@ -498,7 +504,7 @@ app.post('/api/admin/pay/:id', adm, async (req, res) => {
     'Client : ' + d.lastName, 'Prestation : ' + d.service + ' (' + fd(d.date) + ')', '', ...lines.map(l => pad(l.label, l.amount.toFixed(2) + ' €')), '-'.repeat(40), pad('TOTAL PAYÉ', total.toFixed(2) + ' €'), '', 'Merci de votre confiance !'].join('\n');
   d.status = 'paid'; d.total = total; D.finances.push({ id: crypto.randomUUID(), type: 'revenue', name: d.lastName, amount: total, date: new Date().toISOString().slice(0, 10), note: 'Reçu ' + no });
   save();
-  const ticketHtml = rows([['Dossier n°', d.num], ['Reçu n°', no], ['Date', new Date().toLocaleDateString('fr-FR')], ['Client', d.lastName], ['Prestation', d.service + ' — ' + fd(d.date)]]) + rows(lines.map(l => [l.label, eur(l.amount)])) + `<table width="100%" cellpadding="0" cellspacing="0" style="margin-top:12px"><tr><td style="font:bold 16px Arial,Helvetica,sans-serif;color:#ffffff;padding:6px 0">Total payé</td><td align="right" style="font:bold 22px Arial,Helvetica,sans-serif;color:#ffffff;padding:6px 0">${eur(total)}</td></tr></table>`;
+  const ticketHtml = rows([['Dossier n°', d.num], ['Reçu n°', no], ['Date', new Date().toLocaleDateString('fr-FR')], ['Client', d.lastName], ['Prestation', d.service + ' — ' + fd(d.date) + (d.city ? ' — ' + d.city : '')]]) + rows(lines.map(l => [l.label, eur(l.amount)])) + `<table width="100%" cellpadding="0" cellspacing="0" style="margin-top:12px"><tr><td style="font:bold 16px Arial,Helvetica,sans-serif;color:#ffffff;padding:6px 0">Total payé</td><td align="right" style="font:bold 22px Arial,Helvetica,sans-serif;color:#ffffff;padding:6px 0">${eur(total)}</td></tr></table>`;
   both(d.email, d.phone, 'Votre reçu ' + no, ticket, tpl('Paiement reçu', p(`Bonjour ${E(d.lastName)}, merci pour votre confiance ! Voici le reçu de votre paiement.`) + ticketHtml + p('<span style="font-size:13px">Ce message fait office de reçu de paiement. Conservez-le.</span>'), { st: 'paid', sub: 'Reçu n° ' + no, cta: 'Voir mon dossier', ctaUrl: (process.env.SITE_URL || '') + '/#suivi', pre: 'Paiement de ' + eur(total) + ' bien reçu. Merci !' })); res.json({ ok: 1 });
 });
 
@@ -537,7 +543,7 @@ app.post('/api/admin/deploy', adm, async (req, res) => {
 const noticeGroups = () => { const g = {}; for (const d of D.dossiers) { const e = String(d.email || '').trim().toLowerCase(); if (!e) continue; (g[e] = g[e] || []).push(d); } return g; };
 const noticeMail = (email, ds) => {
   const site = (process.env.SITE_URL || '').replace(/\/$/, ''), list = ds.slice(0, 5), name = list[0].lastName;
-  const blocks = list.map(d => rows([['Dossier n°', d.num], ['Prestation', d.service + ' — ' + fd(d.date)], ['Code de suivi', d.trackCode]])).join('<div style="height:16px"></div>');
+  const blocks = list.map(d => rows([['Dossier n°', d.num], ['Prestation', d.service + ' — ' + fd(d.date) + (d.city ? ' — ' + d.city : '')], ['Code de suivi', d.trackCode]])).join('<div style="height:16px"></div>');
   const text = `Bonjour ${name}, notre site a été mis à jour : chaque dossier a maintenant un numéro et un code de suivi personnel.\n\n` + list.map(d => `Dossier n° ${d.num} — ${d.service} le ${fd(d.date)}\nCode de suivi : ${d.trackCode}`).join('\n\n') + (site ? `\n\nSuivre mon dossier : ${site}/#suivi` : '') + '\n\nCe message est envoyé une seule fois.';
   const html = tpl('Votre dossier a un numéro', p(`Bonjour ${E(name)},`) + p('Nous avons mis à jour notre site : chaque dossier a désormais un <b>numéro</b> et un <b>code de suivi</b> personnel. Avec ce code, vous suivez l’avancement de votre dossier à tout moment et vous pouvez régler en ligne dès qu’il est accepté.') + blocks + p('<span style="font-size:13px">Conservez ce code, il est personnel. Ce message est envoyé une seule fois.</span>'),
     { sub: 'Un numéro et un code de suivi pour chaque dossier.', cta: site ? 'Suivre mon dossier' : undefined, ctaUrl: site ? site + '/#suivi' : undefined, pre: 'Voici le numéro et le code de suivi de votre dossier.' });
@@ -567,6 +573,7 @@ app.post('/api/admin/test-mail', adm, async (_, res) => {
 
 (async () => {
   if (UP) { try { const r = await up(['GET', 'djdata']); if (r.result) D = { ...D, ...JSON.parse(r.result) }; console.log('Données chargées depuis Upstash'); } catch (e) { console.error('ERREUR UPSTASH', e.message); } ready = true; }
+  if (!Array.isArray(D.locations) || !D.locations.length) { D.locations = ['Moulins', 'Saint-Étienne']; save(); }
   if (assignNums()) { save(); console.log('Numéros de dossier attribués'); }
   console.log('Routes prêtes — fichier complet');
 })();
