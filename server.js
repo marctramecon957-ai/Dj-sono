@@ -1,5 +1,5 @@
 const express = require('express'), fs = require('fs'), crypto = require('crypto'), nodemailer = require('nodemailer');
-console.log('Démarrage… [build lieux v14]');
+console.log('Démarrage… [build conformite v15]');
 process.on('uncaughtException', e => console.error('ERREUR FATALE', e));
 process.on('unhandledRejection', e => console.error('ERREUR PROMESSE', e));
 const app = express();
@@ -11,8 +11,11 @@ app.use(express.json());
 app.use('/api', (_, res, next) => { res.set('Cache-Control', 'no-store'); next(); });
 const IDX = [path.join(__dirname, 'public', 'index.html'), path.join(__dirname, 'index.html')].find(p => fs.existsSync(p));
 app.get('/', (_, res) => res.set('Cache-Control', 'no-store').sendFile(IDX));
+app.get('/fonts/:f', (req, res) => { const f = String(req.params.f);
+  if (!/^[a-z0-9-]+\.woff2$/.test(f)) return res.status(404).end(); const p = path.join(__dirname, 'fonts', f);
+  if (!fs.existsSync(p)) return res.status(404).end(); res.set({ 'Content-Type': 'font/woff2', 'Cache-Control': 'public, max-age=31536000, immutable' }).sendFile(p); });
 const BUILD = Date.now().toString(36);
-app.get('/api/version', (_, res) => res.json({ build: 'lieux v14', id: BUILD, icones: readIcon('icon-512.png') ? 'fichiers PNG' : 'secours (ajoute les 3 fichiers PNG)' }));
+app.get('/api/version', (_, res) => res.json({ build: 'conformite v15', id: BUILD, icones: readIcon('icon-512.png') ? 'fichiers PNG' : 'secours (ajoute les 3 fichiers PNG)' }));
 
 // ---- Application installable (PWA) : icônes, manifeste, service worker ----
 const readIcon = n => { try { return fs.readFileSync(path.join(__dirname, n)); } catch { return null; } };
@@ -249,6 +252,8 @@ const confirmCredits = d => { let ch = false;
 app.post('/api/suivi/valider-credit', async (req, res) => {
   const code = String(req.body.code || '').trim().toUpperCase(), d = D.dossiers.find(x => x.trackCode === code); if (!d) return res.status(404).json({ error: 'Dossier introuvable' });
   if (d.status !== 'accepted') return res.status(400).json({ error: 'Dossier non disponible' });
+  if (req.body.cgv !== true) return res.status(400).json({ error: 'Vous devez accepter les conditions générales avant de commander.' });
+  d.cgvAt = new Date().toISOString();
   const o = payOptions(d); if (o.left > 0.005 || !(o.price > 0) || !(d.credits || []).length) return res.status(400).json({ error: 'Il reste un montant à payer.' });
   confirmCredits(d); d.status = 'paid'; d.total = o.price; d.paidTotal = d.paidTotal || 0; save();
   D.finances.push({ id: crypto.randomUUID(), type: 'revenue', name: d.lastName, amount: 0, date: today(), note: 'Dossier couvert par ' + d.credits.map(c => c.label).join(' + ') + ' — ' + d.num }); save();
@@ -260,6 +265,8 @@ app.post('/api/suivi/paiement', async (req, res) => {
   const code = String(req.body.code || '').trim().toUpperCase();
   const d = D.dossiers.find(x => x.trackCode === code); if (!d) return res.status(404).json({ error: 'Code introuvable' });
   if (d.status !== 'accepted') return res.status(400).json({ error: 'Le paiement n’est pas disponible pour ce dossier' });
+  if (req.body.cgv !== true) return res.status(400).json({ error: 'Vous devez accepter les conditions générales avant de commander.' });
+  d.cgvAt = new Date().toISOString();
   if (!SK()) return res.status(503).json({ error: 'Le paiement en ligne n’est pas encore activé. Contactez-nous pour régler.' });
   releaseHolds(); const o = payOptions(d); if (!(o.price > 0)) return res.status(400).json({ error: 'Le montant de votre dossier n’est pas encore défini. Nous vous contactons très vite.' });
   if (o.left <= 0.005 && o.credit > 0) return res.status(400).json({ error: 'Votre dossier est couvert par votre code : validez-le sans paiement.' });
@@ -320,10 +327,12 @@ const giftMail = (g, to, buyer) => {
 app.post('/api/cadeau/acheter', async (req, res) => {
   const gs = giftSaleInfo(); if (!gs.on) return res.status(503).json({ error: 'La vente de cartes cadeaux n’est pas ouverte pour le moment.' });
   const amount = +req.body.amount; if (!gs.amounts.includes(amount)) return res.status(400).json({ error: 'Montant non proposé.' });
+  if (req.body.cgv !== true) return res.status(400).json({ error: 'Vous devez accepter les conditions générales avant de commander.' });
+
   const buyer = String(req.body.buyerEmail || '').trim().toLowerCase(), to = String(req.body.toEmail || buyer).trim().toLowerCase(), re = /^\S+@\S+\.\S+$/;
   if (!re.test(buyer) || !re.test(to)) return res.status(400).json({ error: 'Adresse e-mail invalide.' });
   const site = (process.env.SITE_URL || '').replace(/\/$/, ''); if (!site) return res.status(500).json({ error: 'SITE_URL manquant dans Render' });
-  const g = { id: crypto.randomUUID(), code: genGift(), amount, status: 'pending', from: String(req.body.from || '').trim().slice(0, 60), message: String(req.body.message || '').trim().slice(0, 300), to, buyer, created: new Date().toISOString(), months: gs.months, source: 'web' };
+  const g = { id: crypto.randomUUID(), code: genGift(), amount, status: 'pending', from: String(req.body.from || '').trim().slice(0, 60), message: String(req.body.message || '').trim().slice(0, 300), to, buyer, created: new Date().toISOString(), months: gs.months, source: 'web', cgvAt: new Date().toISOString() };
   D.gifts.unshift(g); save();
   try { const f = { mode: 'payment', 'line_items[0][quantity]': '1', 'line_items[0][price_data][currency]': 'eur', 'line_items[0][price_data][unit_amount]': String(Math.round(amount * 100)), 'line_items[0][price_data][product_data][name]': 'Carte cadeau Sound & Light — ' + eur(amount),
       client_reference_id: g.id, 'metadata[gift]': g.id, 'metadata[label]': 'Carte cadeau', success_url: site + '/?cadeau=ok#cadeau', cancel_url: site + '/?cadeau=annule#cadeau', customer_email: buyer };
